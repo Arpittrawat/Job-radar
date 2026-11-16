@@ -52,32 +52,16 @@ def main():
                 """SELECT * FROM funding WHERE COALESCE(published_at, first_seen_at) >= ?
                    ORDER BY COALESCE(published_at, first_seen_at) DESC LIMIT 400""", (since,))]
             import funding as _f
-            # founders already known from YC job pages (real LinkedIn profiles), keyed by company
-            yc_founders = {}
-            for j in jobs:
-                for p in (j.get("d") or {}).get("people", []):
-                    if p.get("role") == "Founder" and p.get("linkedin"):
-                        yc_founders.setdefault(_f.norm_company(re.sub(r"\s*\([A-Z]\d{2}\)$", "", j["company"])), []).append(
-                            dict(name=p["name"], title=p.get("title", ""), linkedin=p["linkedin"]))
             seen, uniq, seen_amt = set(), [], []
             for r in funding:  # drop repeats of the same company and generic headlines stored by older versions
-                r.pop("dedupe_key", None)
-                r["company"] = _f.clean_name(r["company"]) or r["company"]
+                for col in ("dedupe_key", "enriched_at", "website"):
+                    r.pop(col, None)
                 try:
-                    names = json.loads(r.get("founders") or "[]")
+                    r["founders"] = [n if isinstance(n, str) else n.get("name", "") for n in json.loads(r.get("founders") or "[]")]
+                    r["founders"] = [n for n in r["founders"] if n][:4]
                 except Exception:
-                    names = []
-                people = []
-                for n in names:
-                    p = dict(name=n, title="Founder", linkedin="") if isinstance(n, str) else dict(n)
-                    if not p.get("name"):
-                        continue
-                    if not p.get("linkedin"):
-                        p["search"] = "https://www.linkedin.com/search/results/people/?" + urllib.parse.urlencode({"keywords": f"{p['name']} {r['company']}"})
-                    people.append(p)
-                r["founders"] = yc_founders.get(_f.norm_company(r["company"])) or people
-                r.pop("enriched_at", None)
-                r["founders_search"] = "https://www.linkedin.com/search/results/people/?" + urllib.parse.urlencode({"keywords": f"{r['company']} founder"})
+                    r["founders"] = []
+                r["company"] = _f.clean_name(r["company"]) or r["company"]
                 k = _f.norm_company(r["company"])
                 # same company written two ways (e.g. "Morgan" / "Morgan Health") with the same amount = same story
                 near = any((k.startswith(s) or s.startswith(k)) and min(len(k), len(s)) >= 4 and amt == (r["amount"] or "")

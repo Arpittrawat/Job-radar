@@ -255,39 +255,35 @@ def _merge_founders(names, profiles):
             out.append(dict(name=n, title="Founder", linkedin=""))
     return out[:4]
 
-def enrich_pending(limit=25, days=21):
-    """Deep pass, newest first: open the real article (also behind Google News links), read founders + website,
-    then search the web for whatever is still missing. Each story is processed once."""
+def enrich_pending(limit=30, days=21):
+    """For each story once: swap Google News links for the real article, then read the article for founder NAMES
+    (names only, no links). Stories where no founder is named simply show none."""
     import lookup
     init()
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
     with db.conn() as c:
-        rows = [dict(r) for r in c.execute("""SELECT * FROM funding WHERE enriched_at IS NULL AND COALESCE(published_at, first_seen_at) >= ?
+        rows = [dict(r) for r in c.execute("""SELECT id, company, url, headline, founders FROM funding WHERE enriched_at IS NULL
+                                              AND COALESCE(published_at, first_seen_at) >= ?
                                               ORDER BY COALESCE(published_at, first_seen_at) DESC LIMIT ?""", (since, limit))]
-    done = 0
+    named = 0
     for r in rows:
+        url = r["url"] or ""
+        if "news.google.com" in url:
+            url = lookup.resolve_gnews(url) or url
         try:
-            company, url, site = r["company"], r["url"] or "", r["website"]
+            names = [n for n in json.loads(r.get("founders") or "[]") if isinstance(n, str)]
+        except Exception:
+            names = []
+        if not names and url and "news.google.com" not in url:
             try:
-                names = json.loads(r.get("founders") or "[]")
+                page = _get(url, timeout=15)
+                text = _text(re.sub(r"(?is)<(script|style|nav|footer|aside).*?</\1>", " ", page))[:30000]
+                names = find_founders(text, r["company"])
             except Exception:
-                names = []
-            if "news.google.com" in url:
-                url = lookup.resolve_gnews(url) or url
-            if url and "news.google.com" not in url:
-                s2, more = article_info(url, company)
-                site = site or s2
-                names = names or more
-            profiles = [n for n in names if isinstance(n, dict) and n.get("linkedin")]
-            if not profiles:
-                profiles = lookup.find_founders(company)
-            if not site:
-                site = lookup.find_website(company)
-            founders = _merge_founders([n for n in names if not (isinstance(n, dict) and n.get("linkedin"))], profiles)
-            with db.conn() as c:
-                c.execute("UPDATE funding SET url=?, website=?, founders=?, enriched_at=? WHERE id=?",
-                          (url, site, json.dumps(founders), datetime.now(timezone.utc).isoformat(timespec="seconds"), r["id"]))
-            done += 1
-        except Exception as e:
-            print(f"[funding details] {r['company']}: {type(e).__name__}: {e}")
-    print(f"[funding details] {done} stories checked for founders + website")
+                pass
+            time.sleep(0.6)
+        named += bool(names)
+        with db.conn() as c:
+            c.execute("UPDATE funding SET url=?, founders=?, enriched_at=? WHERE id=?",
+                      (url, json.dumps(names), datetime.now(timezone.utc).isoformat(timespec="seconds"), r["id"]))
+    print(f"[funding details] {len(rows)} stories read, founders named in {named}")
