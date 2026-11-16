@@ -353,8 +353,7 @@ function fhealth(){const h=DATA.funding_health||[];return h.length?"Sources: "+h
 function fFounders(f){const fs=f.founders||[];
   const rows=fs.map(p=>`<div class="frow"><span class="av av-f">${esc(initials(p.name))}</span><div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="ptitle">${esc(p.title||"Founder")}</div></div>
     <a class="pill-btn" href="${esc(p.linkedin||p.search)}" target="_blank" rel="noopener">${LI}<span>${p.linkedin?"Profile":"Find"}</span></a></div>`).join("");
-  return`<div class="founders"><div class="fh">Founders</div>${rows||`<div class="frow"><span class="av av-h">?</span><div class="pinfo"><div class="pname">Not named in the news</div><div class="ptitle">Search ${esc(f.company)} founders on LinkedIn</div></div>
-    <a class="pill-btn" href="${esc(f.founders_search||"#")}" target="_blank" rel="noopener">${LI}<span>Find</span></a></div>`}</div>`}
+  return rows?`<div class="founders"><div class="fh">Founders</div>${rows}</div>`:""}
 function fdetailHTML(f,sheet){
   if(!f)return sheet?"":`<div class="empty" style="height:70vh"><div><h2>No Story Selected</h2><p>Choose a funding story to see the details.</p></div></div>`;
   return`<div class="detail-inner">${sheet?'<div class="grab"></div><button class="done-btn" data-close>Done</button>':""}
