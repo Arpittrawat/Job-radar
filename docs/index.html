@@ -1,82 +1,406 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EEDDD3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1218" media="(prefers-color-scheme: dark)">
 <title>Job Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--ink:#16202b;--mute:#5d6b7a;--line:#dfe3e8;--accent:#1f5eff;--ok:#1a7f4b;--warn:#b4531a}
-@media (prefers-color-scheme:dark){:root{--bg:#10151b;--panel:#171e26;--ink:#e6ebf1;--mute:#93a1b0;--line:#27313c;--accent:#6b9bff;--ok:#4cc28a;--warn:#e69a64}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif}
-main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
-h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 18px}
-.tabs{display:flex;gap:6px;margin-bottom:14px}
-.tabs button,.row button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:8px;cursor:pointer}
-.tabs button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
-button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center}
-select,input[type=search]{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
-label.chk{color:var(--mute);display:flex;gap:6px;align-items:center}
-.health{color:var(--mute);font-size:13px;margin:0 0 14px}.health b{color:var(--ink)}.bad{color:var(--warn)}
-.row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
-.row.applied{opacity:.6}
-.t{font-weight:600;color:var(--ink);text-decoration:none}.t:hover{color:var(--accent);text-decoration:underline}
-.meta{color:var(--mute);font-size:13px;margin-top:3px}
-.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;margin-right:6px;color:var(--mute)}
-.pill.dupe{color:var(--warn);border-color:var(--warn)}
-.empty{padding:40px 0;text-align:center;color:var(--mute)}
-</style></head><body><main>
-<h1>Job Radar</h1><p class="sub" id="sub"></p>
-<div class="tabs" role="group" aria-label="View">
-  <button data-tab="new" aria-pressed="true">New</button>
-  <button data-tab="applied" aria-pressed="false">Applied</button>
-  <button data-tab="all" aria-pressed="false">All</button>
+:root{
+  --base:#EEDDD3; --b1:#F2B89A; --b2:#E3B3C8; --b3:#F1D6A4; --b4:#CFC6EA;
+  --g:rgba(255,255,255,.42); --gb:rgba(255,255,255,.65); --hi:rgba(255,255,255,.9); --spec:rgba(255,255,255,.55); --sh:rgba(90,50,40,.14);
+  --card:rgba(255,253,251,.86); --cardsolid:#FDF8F5; --tile:rgba(255,253,251,.78);
+  --ink:#2A1E1C; --mute:rgba(42,30,28,.56); --faint:rgba(42,30,28,.32); --sep:rgba(42,30,28,.09); --fill:rgba(42,30,28,.06);
+  --blue:#0A6CFF; --hot:#C2571A; --green:#248A3D; --red:#D70015; --on:rgba(255,255,255,.62);
+  --spring:cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-color-scheme:dark){:root{
+  --base:#1A1218; --b1:#7A3B4E; --b2:#B8662E; --b3:#4B3A78; --b4:#5A2F4A;
+  --g:rgba(40,30,38,.4); --gb:rgba(255,255,255,.16); --hi:rgba(255,255,255,.28); --spec:rgba(255,255,255,.14); --sh:rgba(0,0,0,.45);
+  --card:rgba(30,22,28,.84); --cardsolid:#211820; --tile:rgba(30,22,28,.72);
+  --ink:#F7EDE8; --mute:rgba(247,237,232,.56); --faint:rgba(247,237,232,.3); --sep:rgba(255,255,255,.08); --fill:rgba(255,255,255,.07);
+  --blue:#3D95FF; --hot:#FFB066; --green:#30D158; --red:#FF6961; --on:rgba(255,255,255,.13);
+}}
+@media (prefers-reduced-transparency:reduce){:root{--g:var(--cardsolid);--card:var(--cardsolid);--tile:var(--cardsolid)}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  color:var(--ink);background:var(--base);font-size:15px;line-height:1.35;letter-spacing:-.01em;font-feature-settings:"tnum" 1}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:2px;border-radius:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ambient background */
+.wall{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--base)}
+.wall i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.85}
+.wall i:nth-child(1){width:70vw;height:70vh;left:-18vw;top:-25vh;background:var(--b1)}
+.wall i:nth-child(2){width:60vw;height:65vh;right:-15vw;top:12vh;background:var(--b2)}
+.wall i:nth-child(3){width:55vw;height:55vh;left:22vw;bottom:-28vh;background:var(--b3)}
+.wall i:nth-child(4){width:40vw;height:40vh;left:42vw;top:-15vh;background:var(--b4);opacity:.7}
+
+/* glass material: functional layer only */
+.glass{position:relative;background:var(--g);backdrop-filter:blur(34px) saturate(1.6);-webkit-backdrop-filter:blur(34px) saturate(1.6);
+  border:1px solid var(--gb);box-shadow:inset 0 1px 0 var(--hi),0 12px 40px var(--sh)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(140deg,var(--spec) 0%,transparent 38%,transparent 70%,rgba(255,255,255,.08) 100%)}
+.glass>*:not(.thumb){position:relative;z-index:1}
+
+/* ---------- desktop ---------- */
+.app{display:grid;grid-template-columns:250px 400px 1fr;gap:12px;height:100vh;padding:14px}
+.side{border-radius:24px;padding:22px 12px 16px;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.brand{font-size:15px;font-weight:700;padding:0 10px 18px;letter-spacing:-.02em}
+.sh{font-size:11px;font-weight:600;color:var(--mute);padding:16px 10px 6px}
+.si{display:flex;align-items:center;width:100%;padding:7px 10px;border-radius:11px;font-size:13.5px;text-align:left;position:relative;transition:background .2s var(--spring)}
+.si:hover{background:var(--fill)}
+.si[aria-pressed=true]{background:var(--on);font-weight:600;box-shadow:inset 0 1px 0 var(--hi)}
+.si .ct{margin-left:auto;color:var(--mute);font-weight:400;font-size:12px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;font-size:13.5px;width:100%;margin-top:8px}
+.switch{width:34px;height:20px;border-radius:10px;background:var(--fill);box-shadow:inset 0 0 0 1px var(--sep);position:relative;transition:background .25s var(--spring);flex:none}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .35s var(--spring)}
+.sw[aria-checked=true] .switch{background:var(--green)}
+.sw[aria-checked=true] .switch::after{transform:translateX(14px)}
+.side-foot{margin-top:auto;padding:14px 10px 0;font-size:11px;color:var(--mute);line-height:1.6}
+.bad{color:var(--red)}
+
+.list{background:var(--card);border-radius:24px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 12px 40px var(--sh)}
+.list-head{padding:22px 20px 8px}
+.list-head h1{font-size:26px;font-weight:700;letter-spacing:-.025em}
+.list-head p{font-size:12px;color:var(--mute);margin-top:3px}
+.rows{overflow-y:auto;flex:1;padding:0 10px 24px;outline:none}
+.day{font-size:12px;font-weight:600;color:var(--mute);padding:14px 12px 6px;position:sticky;top:0;background:var(--cardsolid);z-index:2}
+.row{display:block;width:100%;text-align:left;padding:10px 12px 11px 24px;border-radius:13px;position:relative;transition:background .15s}
+.row+.row::before{content:"";position:absolute;left:24px;right:12px;top:0;border-top:1px solid var(--sep)}
+.row:hover{background:var(--fill)}
+.row[aria-selected=true]{background:var(--blue);color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--blue) 30%,transparent)}
+.row[aria-selected=true]::before,.row[aria-selected=true]+.row::before{border-color:transparent}
+.r1{display:flex;align-items:baseline;gap:8px;font-size:13px}
+.r1 b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.age{margin-left:auto;font-size:12px;color:var(--mute);white-space:nowrap}
+.age.hot{color:var(--hot);font-weight:600}
+.r2{font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r3{font-size:12px;color:var(--mute);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row[aria-selected=true] .age,.row[aria-selected=true] .r3{color:rgba(255,255,255,.85)}
+.dot{position:absolute;left:9px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
+.row[aria-selected=true] .dot{background:#fff}
+.row.done .r2{text-decoration:line-through;text-decoration-color:var(--faint)}
+.check{color:var(--green);font-weight:700;margin-right:4px}
+.row[aria-selected=true] .check{color:#fff}
+.row.leaving{animation:leave .38s var(--spring) forwards}
+@keyframes leave{to{opacity:0;transform:translateX(26px)}}
+
+.detail{position:relative;overflow-y:auto;padding:76px 26px 30px 14px;min-width:0}
+.toolbar{position:absolute;top:6px;right:10px;display:flex;gap:8px;z-index:3}
+.pill{height:38px;border-radius:19px;display:flex;align-items:center;gap:8px;padding:0 16px;font-size:14px;font-weight:500}
+.pill.search{width:240px;padding:0 14px}
+.pill.search input{border:0;background:none;outline:none;flex:1;min-width:0;font-size:14px}
+.pill.search input::placeholder{color:var(--mute)}
+.pill svg{flex:none;opacity:.55}
+.detail-inner{max-width:760px;animation:fadein .3s var(--spring)}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}}
+.hero{background:var(--card);border-radius:24px;padding:30px 32px 32px;box-shadow:0 12px 40px var(--sh)}
+.d-co{font-size:13px;color:var(--mute)}
+.d-title{font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-.028em;margin:8px 0 8px}
+.d-sub{font-size:15px;color:var(--mute)}
+.d-sub .hot{color:var(--hot);font-weight:600}
+.actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 22px;border-radius:21px;font-size:14px;font-weight:600;text-decoration:none;transition:transform .25s var(--spring),filter .2s}
+.btn:active{transform:scale(.95)}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px color-mix(in srgb,var(--blue) 32%,transparent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.done{color:var(--green)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.fact{background:var(--tile);border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px var(--sh)}
+.fact small{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
+.fact span{font-size:14px;font-weight:500}
+.note{margin-top:16px;font-size:13px;color:var(--mute)}
+.kbd{margin-top:26px;font-size:12px;color:var(--mute)}
+.kbd kbd{font:inherit;border:1px solid var(--sep);background:var(--tile);border-radius:6px;padding:1px 6px;margin:0 2px}
+.empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--mute);padding:40px}
+.empty h2{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.empty p{font-size:13px;max-width:280px}
+@media (max-width:1180px){.app{grid-template-columns:220px 340px 1fr}.facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- phone / tablet ---------- */
+.m,.tabbar,.fab,.fade{display:none}
+@media (max-width:899px){
+  .app{display:none}
+  .m{display:block;max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 26px) 16px 140px}
+  .m h1{font-size:34px;line-height:41px;font-weight:700;letter-spacing:-.022em}
+  .m .sub{font-size:15px;color:var(--mute);margin:2px 0 16px}
+  .msearch{display:none;height:42px;border-radius:21px;margin-bottom:12px;align-items:center;gap:8px;padding:0 14px}
+  .msearch.show{display:flex;animation:fadein .3s var(--spring)}
+  .msearch input{border:0;background:none;outline:none;flex:1;min-width:0;font-size:17px}
+  .msearch input::placeholder{color:var(--mute)}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);border-radius:22px;padding:3px;margin-bottom:14px}
+  .seg .thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:19px;background:rgba(255,255,255,.88);
+    box-shadow:0 4px 12px var(--sh),inset 0 1px 0 #fff;transition:transform .45s var(--spring)}
+  @media (prefers-color-scheme:dark){.seg .thumb{background:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}}
+  .seg button{position:relative;z-index:1;font-size:14px;font-weight:500;padding:9px 4px}
+  .seg button[aria-pressed=true]{font-weight:600}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 8px;margin:0 -16px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border-radius:19px;padding:7px 15px;font-size:15px;font-weight:500;white-space:nowrap;transition:background .2s,color .2s}
+  .chip[aria-pressed=true]{background:var(--ink);color:var(--base);border-color:transparent;box-shadow:0 6px 16px var(--sh)}
+  .chip[aria-pressed=true]::before{display:none}
+  .chip.glass{box-shadow:inset 0 1px 0 var(--hi)}
+  .gh{font-size:13px;color:var(--mute);text-transform:uppercase;padding:20px 16px 7px}
+  .grp{background:var(--card);border-radius:22px;overflow:hidden;box-shadow:0 10px 30px var(--sh)}
+  .mrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px 12px 16px;position:relative;min-height:62px}
+  .mrow:active{background:var(--fill)}
+  .mrow+.mrow::before{content:"";position:absolute;top:0;left:42px;right:0;border-top:1px solid var(--sep)}
+  .mdot{width:10px;height:10px;border-radius:50%;flex:none}
+  .mdot.on{background:var(--blue)}.mdot.done{background:var(--green)}
+  .mtx{flex:1;min-width:0}
+  .mt{display:block;font-size:16px;font-weight:600;line-height:21px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .mrow.done .mt{text-decoration:line-through;text-decoration-color:var(--faint)}
+  .ms{display:block;font-size:14px;color:var(--mute);line-height:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mage{font-size:14px;color:var(--mute);white-space:nowrap}
+  .mage.hot{color:var(--hot);font-weight:600}
+  .chev{color:var(--faint);font-size:22px;line-height:1;margin-left:-4px}
+  .msw{margin-top:22px;background:var(--card);border-radius:18px;padding:12px 16px;font-size:16px}
+  .msw .switch{width:51px;height:31px;border-radius:16px}
+  .msw .switch::after{width:27px;height:27px}
+  .msw[aria-checked=true] .switch::after{transform:translateX(20px)}
+  .mfoot{font-size:13px;color:var(--mute);padding:18px 16px 0;line-height:1.6}
+  .m .empty{height:auto;padding:60px 20px}
+  .fade{display:block;position:fixed;left:0;right:0;bottom:0;height:150px;pointer-events:none;z-index:9;
+    background:linear-gradient(transparent,color-mix(in srgb,var(--base) 88%,transparent))}
+  .tabbar{display:flex;position:fixed;left:16px;right:88px;bottom:calc(env(safe-area-inset-bottom) + 16px);height:64px;border-radius:32px;
+    justify-content:space-around;align-items:center;padding:0 6px;z-index:10;max-width:420px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:6px 16px;border-radius:24px;color:var(--mute);transition:background .3s var(--spring),color .3s}
+  .tab svg{width:22px;height:22px}
+  .tab[aria-pressed=true]{color:var(--blue);background:var(--on)}
+  .fab{display:grid;place-items:center;position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);width:64px;height:64px;border-radius:50%;z-index:10}
+}
+.toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,20px);opacity:0;padding:12px 18px;border-radius:22px;font-size:14px;font-weight:500;
+  transition:opacity .3s,transform .4s var(--spring);z-index:30;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.scrim{position:fixed;inset:0;background:rgba(40,20,20,.28);opacity:0;pointer-events:none;transition:opacity .4s var(--spring);z-index:20}
+.sheet{position:fixed;left:8px;right:8px;bottom:8px;max-height:86vh;overflow-y:auto;border-radius:38px;z-index:21;
+  padding:10px 22px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(110%);transition:transform .5s var(--spring);
+  --g:color-mix(in srgb,var(--cardsolid) 70%,transparent);visibility:hidden}
+.sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--faint);margin:0 auto 10px}
+.sheet .done-btn{position:absolute;right:22px;top:20px;color:var(--blue);font-size:17px;font-weight:600;z-index:2}
+.sheet .detail-inner{animation:none}
+.sheet .d-co{margin-top:14px}
+.sheet .d-title{font-size:25px}
+.sheet .actions{flex-direction:column}
+.sheet .btn{height:52px;border-radius:26px;font-size:17px}
+.sheet .facts{grid-template-columns:1fr 1fr}
+.sheet .fact{box-shadow:none}
+.open .scrim{opacity:1;pointer-events:auto}.open .sheet{transform:none;visibility:visible}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div class="wall" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<!-- Mac / laptop -->
+<div class="app" id="app">
+  <nav class="side glass" aria-label="Filters">
+    <div class="brand">Job Radar</div>
+    <div id="s-views"></div>
+    <div class="sh">Role</div><div id="s-roles"></div>
+    <div class="sh">Location</div><div id="s-locs"></div>
+    <div class="sh">Board</div><div id="s-boards"></div>
+    <button class="sw" role="switch" aria-checked="false" id="s-other"><span>Show other titles</span><span class="switch"></span></button>
+    <div class="side-foot" id="s-foot"></div>
+  </nav>
+  <section class="list" aria-label="Jobs">
+    <div class="list-head"><h1 id="l-title">New</h1><p id="l-sub"></p></div>
+    <div class="rows" id="rows" role="listbox" aria-label="Job list" tabindex="0"></div>
+  </section>
+  <main class="detail">
+    <div class="toolbar">
+      <label class="pill glass search"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="sr">Search</span><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
+    </div>
+    <div id="detail"></div>
+  </main>
 </div>
-<div class="filters">
-  <input type="search" id="q" placeholder="Search title or company" aria-label="Search">
-  <select id="tag" aria-label="Role type"><option value="">All role types</option></select>
-  <select id="loc" aria-label="Location"><option value="">Any location</option>
-    <option>India</option><option>US</option><option>Remote</option><option>Other</option></select>
-  <select id="source" aria-label="Source"><option value="">All sources</option></select>
-  <label class="chk"><input type="checkbox" id="all"> Include jobs with no title match</label>
+
+<!-- iPhone -->
+<div class="m">
+  <h1>Job Radar</h1><p class="sub" id="m-sub"></p>
+  <label class="msearch glass" id="msearch"><svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span class="sr">Search</span><input id="mq" type="search" placeholder="Search role or company" autocomplete="off"></label>
+  <div class="seg glass" role="group" aria-label="View"><span class="thumb" id="thumb"></span>
+    <button data-v="new">New</button><button data-v="applied">Applied</button><button data-v="all">All</button></div>
+  <div class="chips" id="m-roles" aria-label="Role"></div>
+  <div class="chips" id="m-locs" aria-label="Location"></div>
+  <div id="m-list"></div>
+  <button class="sw msw" role="switch" aria-checked="false" id="m-other"><span>Show other titles</span><span class="switch"></span></button>
+  <div class="mfoot" id="m-foot"></div>
 </div>
-<p class="health" id="health"></p>
-<div id="list"></div>
-</main>
+<div class="fade"></div>
+<nav class="tabbar glass" aria-label="Sections">
+  <button class="tab" aria-pressed="true" data-tab="radar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>Radar</button>
+  <button class="tab" aria-pressed="false" data-tab="applied"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Applied</button>
+  <button class="tab" aria-pressed="false" data-tab="funding"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>Funding</button>
+</nav>
+<button class="fab glass" id="fab" aria-label="Search"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+<div class="toast glass" id="toast" role="status"></div>
+<div id="sheetwrap"><div class="scrim" id="scrim"></div><div class="sheet glass" id="sheet" role="dialog" aria-modal="true" aria-label="Job details"></div></div>
+
 <script>
-const $=id=>document.getElementById(id);let tab="new",DATA={jobs:[],health:[]};
+const $=id=>document.getElementById(id);
+const BOARD={hn:"Hacker News",yc:"YC",a16z:"a16z",trueup:"Lenny's Jobs"};
+const LOCS=["India","US","Remote","Other"];
+const S={view:"new",role:"",loc:"",board:"",q:"",other:false,sel:null,sheet:null};
+let DATA={jobs:[],health:[]},lastVisit=null,mem={};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
+  set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const applied=()=>store.get("radar_applied",{});
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let mem={};
-function getApplied(){try{return JSON.parse(localStorage.getItem("radar_applied")||"{}")}catch(e){return mem}}
-function setApplied(o){mem=o;try{localStorage.setItem("radar_applied",JSON.stringify(o))}catch(e){}}
-function ago(iso){if(!iso)return"date unknown";const h=(Date.now()-new Date(iso))/36e5;
-  return h<1?"under 1h ago":h<24?Math.round(h)+"h ago":Math.round(h/24)+"d ago"}
-function fillSelect(id,vals,label){const cur=$(id).value;
-  $(id).innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option${v===cur?" selected":""}>${esc(v)}</option>`).join("")}
-function render(){
-  const ap=getApplied(),q=$("q").value.toLowerCase(),tag=$("tag").value,loc=$("loc").value,src=$("source").value,all=$("all").checked;
-  const J=DATA.jobs;
-  const inTab=j=>tab==="applied"?!!ap[j.id]:tab==="new"?(j.status==="new"&&!ap[j.id]):true;
-  const rows=J.filter(j=>inTab(j)&&(all||j.tag)&&(!tag||j.tag===tag)&&(!src||j.source===src)
-    &&(!loc||(","+(j.location_group||"")+",").includes(","+loc+","))
-    &&(!q||(j.title||"").toLowerCase().includes(q)||(j.company||"").toLowerCase().includes(q))).slice(0,500);
-  const newN=J.filter(j=>j.status==="new"&&j.tag&&!ap[j.id]).length,apN=J.filter(j=>ap[j.id]).length;
-  $("sub").textContent=`${newN} new matches · ${apN} applied · ${J.length} stored`+(DATA.generated_at?` · updated ${ago(DATA.generated_at)}`:"");
-  $("health").innerHTML=DATA.health.length?"Last scrape: "+DATA.health.map(h=>`<b>${esc(h.source)}</b> ${h.ok?"ok":'<span class="bad">failed</span>'} ${ago(h.ran_at)}`).join(" &nbsp; "):"No scrape has run yet.";
-  $("list").innerHTML=rows.length?rows.map(j=>`<div class="row ${ap[j.id]?"applied":""}">
-    <div><a class="t" href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a>
-    <div class="meta">${esc(j.company)} · ${esc(j.location||"location unknown")} · posted ${ago(j.posted_at)} · seen ${ago(j.first_seen_at)}</div>
-    <div class="meta">${j.tag?`<span class="pill">${esc(j.tag)}</span>`:""}<span class="pill">${esc(j.source)}</span>${j.possible_dupe_of?'<span class="pill dupe">possible duplicate</span>':""}</div></div>
-    <button data-id="${j.id}">${ap[j.id]?"Undo applied":"Mark applied"}</button></div>`).join(""):
-    '<div class="empty">Nothing here. Try another tab, or tick "Include jobs with no title match".</div>';
+const when=j=>j.posted_at||j.first_seen_at;
+const hrs=iso=>iso?(Date.now()-new Date(iso))/36e5:null;
+function short(iso){const h=hrs(iso);if(h==null)return"—";if(h<1)return Math.max(1,Math.round(h*60))+"m";if(h<24)return Math.round(h)+"h";return Math.round(h/24)+"d"}
+function long(iso){const h=hrs(iso);if(h==null)return"Date unknown";if(h<1){const m=Math.max(1,Math.round(h*60));return m+(m===1?" minute ago":" minutes ago")}
+  if(h<24){const r=Math.round(h);return r+(r===1?" hour ago":" hours ago")}const d=Math.round(h/24);return d===1?"Yesterday":d+" days ago"}
+function dayOf(iso){if(!iso)return"Date Unknown";const d=new Date(iso),t=new Date();t.setHours(0,0,0,0);
+  const n=Math.round((t-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+  if(n<=0)return"Today";if(n===1)return"Yesterday";if(n<7)return d.toLocaleDateString(undefined,{weekday:"long"});return"Earlier"}
+const clock=iso=>iso?new Date(iso).toLocaleString(undefined,{weekday:"short",hour:"numeric",minute:"2-digit"}):"—";
+const hot=j=>{const h=hrs(when(j));return h!=null&&h<12};
+const isNew=(j,ap)=>j.status==="new"&&!ap[j.id];
+const fresh=(j,ap)=>lastVisit&&j.first_seen_at>lastVisit&&!ap[j.id];
+const filtering=()=>S.q||S.role||S.loc||S.board;
+
+function base(ap){return DATA.jobs.filter(j=>S.view==="applied"?ap[j.id]:S.view==="new"?isNew(j,ap):true)
+  .filter(j=>S.other||j.tag||S.view==="applied")}
+function filtered(){const ap=applied(),q=S.q.toLowerCase();
+  return base(ap).filter(j=>(!S.role||j.tag===S.role)&&(!S.board||j.source===S.board)
+    &&(!S.loc||(","+(j.location_group||"")+",").includes(","+S.loc+","))
+    &&(!q||(j.title||"").toLowerCase().includes(q)||(j.company||"").toLowerCase().includes(q)))
+    .sort((a,b)=>String(when(b)).localeCompare(String(when(a)))).slice(0,600)}
+function counts(){const ap=applied();return{new:DATA.jobs.filter(j=>isNew(j,ap)&&j.tag).length,applied:DATA.jobs.filter(j=>ap[j.id]).length,all:DATA.jobs.length}}
+function statusLine(){const ap=applied(),since=DATA.jobs.filter(j=>j.tag&&isNew(j,ap)&&fresh(j,ap)).length;
+  return DATA.generated_at?`${since?since+" new since your last visit. ":""}Updated ${long(DATA.generated_at).toLowerCase()}`:"Waiting for the first scan"}
+function health(){return DATA.health.length?"Boards: "+DATA.health.map(s=>s.ok?esc(BOARD[s.source]||s.source):`<span class="bad">${esc(BOARD[s.source]||s.source)} failed</span>`).join(", "):""}
+const emptyCopy=()=>filtering()?["No Results","Try another search or clear a filter."]:
+  {new:["You're All Caught Up","New matches appear after the next scan, around 9 AM and 9 PM."],applied:["No Applications Yet","Mark a job as applied and it shows up here."],all:["No Jobs Yet","Jobs appear after the first scan."]}[S.view];
+
+/* ---------- desktop ---------- */
+function sideItem(group,val,label,count){return`<button class="si" data-g="${group}" data-v="${esc(val)}" aria-pressed="${S[group]===val}">${esc(label)}<span class="ct">${count??""}</span></button>`}
+function renderSide(){const c=counts(),pool=base(applied());
+  const cnt=(k,v)=>pool.filter(j=>k==="loc"?(","+(j.location_group||"")+",").includes(","+v+","):k==="role"?j.tag===v:j.source===v).length;
+  $("s-views").innerHTML=sideItem("view","new","New",c.new)+sideItem("view","applied","Applied",c.applied)+sideItem("view","all","All Jobs",c.all);
+  $("s-roles").innerHTML=[...new Set(DATA.jobs.map(j=>j.tag).filter(Boolean))].sort().map(r=>sideItem("role",r,r,cnt("role",r))).join("");
+  $("s-locs").innerHTML=LOCS.filter(l=>l!=="Other"||cnt("loc",l)).map(l=>sideItem("loc",l,l,cnt("loc",l))).join("");
+  $("s-boards").innerHTML=[...new Set(DATA.jobs.map(j=>j.source))].sort().map(b=>sideItem("board",b,BOARD[b]||b,cnt("board",b))).join("");
+  $("s-other").setAttribute("aria-checked",S.other);
+  $("s-foot").innerHTML=health();
 }
+function renderList(){const rows=filtered(),ap=applied();
+  $("l-title").textContent={new:"New",applied:"Applied",all:"All Jobs"}[S.view];
+  $("l-sub").textContent=statusLine();
+  if(!rows.find(j=>j.id===S.sel))S.sel=rows[0]?.id??null;
+  let h="",g=null;
+  for(const j of rows){const d=dayOf(when(j));if(d!==g){g=d;h+=`<div class="day">${d}</div>`}
+    const done=!!ap[j.id];
+    h+=`<button class="row ${done?"done":""}" role="option" data-id="${j.id}" aria-selected="${j.id===S.sel}">
+      ${fresh(j,ap)?'<span class="dot" aria-label="New since last visit"></span>':""}
+      <div class="r1"><b>${esc(j.company)}</b><span class="age ${hot(j)?"hot":""}">${short(when(j))}</span></div>
+      <div class="r2">${done?'<span class="check">✓</span>':""}${esc(j.title)}</div>
+      <div class="r3">${esc(j.location||"Location not listed")}${j.tag?" — "+esc(j.tag):""}</div></button>`}
+  const e=emptyCopy();
+  $("rows").innerHTML=h||`<div class="empty"><div><h2>${e[0]}</h2><p>${e[1]}</p></div></div>`;
+}
+function detailHTML(j,sheet){
+  if(!j)return sheet?"":`<div class="empty" style="height:70vh"><div><h2>No Job Selected</h2><p>Choose a job from the list to see its details.</p></div></div>`;
+  const done=!!applied()[j.id];
+  return`<div class="detail-inner">${sheet?'<div class="grab"></div><button class="done-btn" data-close>Done</button>':""}
+    <div class="${sheet?"":"hero"}">
+      <div class="d-co">${esc(j.company)} on ${esc(BOARD[j.source]||j.source)}</div>
+      <h2 class="d-title">${esc(j.title)}</h2>
+      <div class="d-sub">${esc(j.location||"Location not listed")}. Posted <span class="${hot(j)?"hot":""}">${long(when(j)).toLowerCase()}</span>.</div>
+      <div class="actions"><a class="btn primary" href="${esc(j.url)}" target="_blank" rel="noopener">Open Job</a>
+        <button class="btn glass ${done?"done":""}" data-apply="${j.id}">${done?"✓ Applied":"Mark as Applied"}</button></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><small>Role type</small><span>${esc(j.tag||"Other")}</span></div>
+      <div class="fact"><small>Region</small><span>${esc((j.location_group||"Other").replace(/,/g,", "))}</span></div>
+      <div class="fact"><small>Board</small><span>${esc(BOARD[j.source]||j.source)}</span></div>
+      <div class="fact"><small>First seen</small><span>${clock(j.first_seen_at)}</span></div></div>
+    ${j.possible_dupe_of?'<p class="note">This role is also listed on another board.</p>':""}
+    ${sheet?"":'<p class="kbd"><kbd>↑</kbd><kbd>↓</kbd> move &nbsp; <kbd>↵</kbd> open job &nbsp; <kbd>A</kbd> mark as applied &nbsp; <kbd>/</kbd> search</p>'}</div>`}
+function renderDetail(){$("detail").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===S.sel),false)}
+
+/* ---------- phone ---------- */
+function renderPhone(){const rows=filtered(),ap=applied(),c=counts();
+  $("m-sub").textContent=statusLine();
+  $("thumb").style.transform=`translateX(${["new","applied","all"].indexOf(S.view)*100}%)`;
+  document.querySelectorAll(".seg button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.v===S.view);
+    b.textContent={new:"New",applied:"Applied",all:"All"}[b.dataset.v]+(c[b.dataset.v]&&b.dataset.v!=="all"?` (${c[b.dataset.v]})`:"")});
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-pressed",t.dataset.tab===(S.view==="applied"?"applied":"radar")));
+  const roles=[...new Set(DATA.jobs.map(j=>j.tag).filter(Boolean))].sort();
+  const chip=(g,v,l)=>`<button class="chip ${S[g]===v?"":"glass"}" data-g="${g}" data-v="${esc(v)}" aria-pressed="${S[g]===v}">${esc(l)}</button>`;
+  $("m-roles").innerHTML=chip("role","","All Roles")+roles.map(r=>chip("role",r,r)).join("");
+  $("m-locs").innerHTML=chip("loc","","Anywhere")+LOCS.map(l=>chip("loc",l,l)).join("");
+  let h="",g=null,open=false;
+  for(const j of rows){const d=dayOf(when(j));if(d!==g){if(open)h+="</div>";g=d;h+=`<div class="gh">${d}</div><div class="grp">`;open=true}
+    const done=!!ap[j.id];
+    h+=`<button class="mrow ${done?"done":""}" data-open="${j.id}"><span class="mdot ${done?"done":fresh(j,ap)?"on":""}"></span>
+      <span class="mtx"><span class="mt">${esc(j.title)}</span><span class="ms">${esc(j.company)}, ${esc(j.location||"location not listed")}</span></span>
+      <span class="mage ${hot(j)?"hot":""}">${short(when(j))}</span><span class="chev">›</span></button>`}
+  if(open)h+="</div>";
+  const e=emptyCopy();
+  $("m-list").innerHTML=h||`<div class="empty"><div><h2>${e[0]}</h2><p>${e[1]}</p></div></div>`;
+  $("m-other").setAttribute("aria-checked",S.other);
+  $("m-foot").innerHTML=health();
+}
+function openSheet(id){S.sheet=id;$("sheet").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===id),true);$("sheetwrap").classList.add("open")}
+function closeSheet(){$("sheetwrap").classList.remove("open");S.sheet=null}
+let tt;function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+function render(){renderSide();renderList();renderDetail();renderPhone()}
+
+/* ---------- actions ---------- */
+function toggleApplied(id){const ap=applied();id=String(id);
+  const leaving=!ap[id]&&S.view==="new";
+  if(ap[id])delete ap[id];else ap[id]=1;store.set("radar_applied",ap);
+  const row=document.querySelector(`.row[data-id="${id}"]`);
+  if(leaving&&row&&row.offsetParent&&!matchMedia("(prefers-reduced-motion: reduce)").matches){
+    const ids=filtered().map(j=>String(j.id)),i=ids.indexOf(id);
+    row.classList.add("leaving");setTimeout(()=>{S.sel=Number(ids[i+1]||ids[i-1])||null;render()},360);
+  } else render();
+  if(S.sheet)$("sheet").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===S.sheet),true);
+}
+document.addEventListener("click",e=>{
+  const si=e.target.closest(".si,.chip");
+  if(si){const g=si.dataset.g,v=si.dataset.v;S[g]=g==="view"?v:(S[g]===v&&v!==""?"":v);S.sel=null;render();return}
+  const r=e.target.closest(".row");if(r){S.sel=Number(r.dataset.id);renderList();renderDetail();return}
+  const ap=e.target.closest("[data-apply]");if(ap){toggleApplied(ap.dataset.apply);return}
+  const mo=e.target.closest("[data-open]");if(mo){openSheet(Number(mo.dataset.open));return}
+  const seg=e.target.closest(".seg button");if(seg){S.view=seg.dataset.v;render();return}
+  const tab=e.target.closest(".tab");if(tab){
+    if(tab.dataset.tab==="funding"){toast("Funding radar is coming soon");return}
+    S.view=tab.dataset.tab==="applied"?"applied":"new";render();window.scrollTo({top:0,behavior:"smooth"});return}
+  if(e.target.closest("#fab")){const s=$("msearch");s.classList.toggle("show");if(s.classList.contains("show")){window.scrollTo({top:0,behavior:"smooth"});$("mq").focus()}return}
+  if(e.target.closest("#s-other,#m-other")){S.other=!S.other;render();return}
+  if(e.target.id==="scrim"||e.target.closest("[data-close]"))closeSheet();
+});
+for(const id of["q","mq"])$(id).addEventListener("input",e=>{S.q=e.target.value;$(id==="q"?"mq":"q").value=S.q;render()});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&S.sheet){closeSheet();return}
+  if(matchMedia("(max-width:899px)").matches)return;
+  if(e.target.tagName==="INPUT"){if(e.key==="Escape"||e.key==="Enter")e.target.blur();return}
+  const ids=filtered().map(j=>j.id),i=ids.indexOf(S.sel);
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.sel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
+    renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
+  else if(e.key==="Enter"&&S.sel!=null){const j=DATA.jobs.find(x=>x.id===S.sel);if(j)window.open(j.url,"_blank","noopener")}
+  else if((e.key==="a"||e.key==="A")&&S.sel!=null&&!e.metaKey&&!e.ctrlKey)toggleApplied(S.sel);
+  else if(e.key==="/"){e.preventDefault();$("q").focus()}
+});
+
 async function load(){
-  try{DATA=await (await fetch("jobs.json?t="+Date.now())).json()}catch(e){$("health").textContent="Could not load jobs.json yet. Run the workflow once."}
-  fillSelect("tag",[...new Set(DATA.jobs.map(j=>j.tag).filter(Boolean))].sort(),"All role types");
-  fillSelect("source",[...new Set(DATA.jobs.map(j=>j.source))].sort(),"All sources");
+  lastVisit=store.get("radar_last_visit",null);
+  try{DATA=await(await fetch("jobs.json?t="+Date.now())).json()}
+  catch(e){$("l-sub").textContent=$("m-sub").textContent="Couldn't load the job list. Run the Job Radar workflow on GitHub once, then refresh.";return}
   render();
+  store.set("radar_last_visit",DATA.generated_at||new Date().toISOString());
 }
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;
-  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",x===b));render()});
-["tag","loc","source","all"].forEach(i=>$(i).onchange=render);$("q").oninput=render;
-$("list").onclick=e=>{const b=e.target.closest("button[data-id]");if(!b)return;
-  const ap=getApplied();if(ap[b.dataset.id])delete ap[b.dataset.id];else ap[b.dataset.id]=1;setApplied(ap);render()};
 load();
 </script></body></html>
