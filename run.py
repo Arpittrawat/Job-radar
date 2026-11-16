@@ -3,7 +3,7 @@ import importlib, traceback, subprocess, sys
 from datetime import datetime, timedelta, timezone
 import db
 
-SOURCES = ["hn", "yc", "a16z", "trueup"]
+SOURCES = ["hn", "yc", "a16z", "trueup", "vc", "remoteok", "remotive", "himalayas", "wwr"]
 
 def baseline_cutoff():
     """First run only: jobs older than the start of yesterday (your local time) are stored as 'old', not 'new'."""
@@ -60,6 +60,7 @@ if __name__ == "__main__":
         funding.run()
     except Exception as e:
         print(f"[funding] FAILED: {e}")
+    run_source("ats")   # company career pages; after funding so newly funded companies are watched right away
     try:
         import enrich
         enrich.run()

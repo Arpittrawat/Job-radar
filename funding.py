@@ -96,6 +96,39 @@ def _amount_text(m):
     u = {"million": "M", "mn": "M", "mln": "M", "m": "M", "billion": "B", "bn": "B", "b": "B", "crore": " Cr", "cr": " Cr", "lakh": " Lakh", "k": "K"}.get(u, unit)
     return f"{cur}{num}{u}"
 
+DESCRIPTOR = re.compile(r"\b(?:startup|start-up|platform|maker|company|firm|provider|developer|unicorn|player|brand|app|based|backer|investor|owner|parent|operator|builder|specialist)\s+", re.I)
+
+def clean_name(pre):
+    """'Germany's NeuralSat' -> 'NeuralSat'; 'Helsing backer Plural' -> 'Plural'; 'Fintech startup Acme' -> 'Acme'."""
+    pre = (pre or "").strip(" ,:-‘’'\"")
+    pre = re.sub(r"^[A-Z][\w.&-]*(?:\s[A-Z][\w.&-]*)?[’']s\s+(?=[A-Z0-9])", "", pre)   # leading possessive: Germany's / India's / Y Combinator's
+    pre = DESCRIPTOR.split(pre)[-1]
+    pre = re.sub(r"^(?:ai|fintech|healthtech|edtech|d2c|saas|b2b|stealth)\s+", "", pre, flags=re.I).strip()
+    return re.sub(r"[’']s$", "", pre).strip(" ,")
+
+NAME = r"([A-Z][a-zA-Z'’.-]+(?:\s[A-Z][a-zA-Z'’.-]+){1,2})"
+FOUNDER_PATTERNS = [
+    re.compile(r"(?:co-)?founded(?:\s+in\s+\d{4})?\s+by\s+" + NAME + r"(?:,\s*" + NAME + r")?(?:,?\s+and\s+" + NAME + r")?"),
+    re.compile(r"(?:co-?founders?|founders)\s+" + NAME + r"(?:,\s*" + NAME + r")?(?:,?\s+and\s+" + NAME + r")?"),
+    re.compile(NAME + r",\s+(?:the\s+)?(?:co-?founder|founder|CEO|chief executive)"),
+    re.compile(r"(?:co-?founder|founder|CEO)(?:\s+and\s+(?:CEO|CTO|COO))?\s+" + NAME),
+]
+NOT_NAMES = re.compile(r"\b(Series|Seed|Capital|Ventures|Partners|Fund|Inc|Ltd|LLC|The|This|That|Today|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December|Google|Read|More)\b")
+
+def find_founders(text, company=""):
+    """Founder names mentioned in news text (best effort, max 3)."""
+    names = []
+    comp = set(re.findall(r"[a-z0-9]+", company.lower()))
+    for p in FOUNDER_PATTERNS:
+        for m in p.finditer(text or ""):
+            for n in m.groups():
+                if not n or NOT_NAMES.search(n) or set(re.findall(r"[a-z0-9]+", n.lower())) & comp:
+                    continue
+                n = n.strip(" .,")
+                if 2 <= len(n.split()) <= 3 and n not in names:
+                    names.append(n)
+    return names[:3]
+
 def extract(title, summary=""):
     """Pull company / amount / round from a funding headline. Returns None if it isn't a funding story."""
     t = re.sub(r"^\[?(exclusive|breaking|funding alert|funding news|funding roundup)\]?\s*[:|\-–]?\s*", "", title, flags=re.I).strip()
@@ -104,11 +137,7 @@ def extract(title, summary=""):
     m = re.search(r"^(?P<pre>.+?)\s+" + VERB + r"\b", t, re.I)
     if not m:
         return None
-    pre = m.group("pre").strip(" ,:-‘’'\"")
-    # "Fintech startup Acme" / "Bengaluru-based Acme" / "AI agent maker Acme" -> "Acme"
-    pre = re.split(r"\b(?:startup|start-up|platform|maker|company|firm|provider|developer|unicorn|player|brand|app|based|backer|investor|owner|parent|operator|builder|specialist)\s+", pre, flags=re.I)[-1]
-    pre = re.sub(r"^(?:ai|fintech|healthtech|edtech|d2c|saas|b2b|stealth)\s+", "", pre, flags=re.I).strip()
-    pre = re.sub(r"[’']s$", "", pre).strip(" ,")
+    pre = clean_name(m.group("pre"))
     if not pre or len(pre) > 40 or len(pre.split()) > 4 or GENERIC.search(pre) or not re.match(r"[A-Z0-9]", pre):
         return None
     blob = t + " " + (summary or "")
@@ -121,11 +150,18 @@ def extract(title, summary=""):
                 round=rnd, india=bool(INDIA.search(blob)))
 
 def find_website(article_url, company):
-    """Best effort: first outbound link in the article whose domain looks like the company's."""
+    return article_info(article_url, company)[0]
+
+def article_info(article_url, company):
+    """Best effort: (company website from outbound links, founder names from the article text)."""
     try:
         page = _get(article_url, timeout=15)
     except Exception:
-        return None
+        return None, []
+    founders = find_founders(_text(re.sub(r"(?is)<(script|style).*?</\1>", " ", page))[:20000], company)
+    return _site_from(page, company), founders
+
+def _site_from(page, company):
     key = re.sub(r"[^a-z0-9]", "", company.lower())[:12]
     links = re.findall(r'href="(https?://[^"#?]+)', page)
     domains = []
@@ -144,6 +180,9 @@ def init():
             id INTEGER PRIMARY KEY AUTOINCREMENT, dedupe_key TEXT UNIQUE,
             company TEXT, amount TEXT, amount_usd REAL, round TEXT, region TEXT,
             headline TEXT, url TEXT, source TEXT, published_at TEXT, first_seen_at TEXT, website TEXT)""")
+        cols = [r[1] for r in c.execute("PRAGMA table_info(funding)")]
+        if "founders" not in cols:
+            c.execute("ALTER TABLE funding ADD COLUMN founders TEXT")
 
 def norm_company(company):
     c = re.sub(r"\b(ai|labs?|inc|technologies|technology|tech|hq|app|io|co|ltd|pvt|private|limited)\b", " ", company.lower())
@@ -160,10 +199,11 @@ def store(item):
         row = c.execute("SELECT first_seen_at FROM funding WHERE dedupe_key=?", (key,)).fetchone()
         if row:
             return False
-        c.execute("""INSERT INTO funding (dedupe_key,company,amount,amount_usd,round,region,headline,url,source,published_at,first_seen_at,website)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+        c.execute("""INSERT INTO funding (dedupe_key,company,amount,amount_usd,round,region,headline,url,source,published_at,first_seen_at,website,founders)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                   (key, item["company"], item["amount"], item["amount_usd"], item["round"], item["region"], item["headline"],
-                   item["url"], item["source"], item["published_at"], datetime.now(timezone.utc).isoformat(timespec="seconds"), item.get("website")))
+                   item["url"], item["source"], item["published_at"], datetime.now(timezone.utc).isoformat(timespec="seconds"), item.get("website"),
+                   json.dumps(item.get("founders") or [])))
         return True
 
 def run(max_age_days=7, website_lookups=25):
@@ -191,15 +231,16 @@ def run(max_age_days=7, website_lookups=25):
                 with db.conn() as c:
                     if c.execute("SELECT 1 FROM funding WHERE dedupe_key=?", (_key(x["company"], x["round"]),)).fetchone():
                         continue
-                site = None
+                site, founders = None, find_founders(title + ". " + (it["summary"] or ""), x["company"])
                 if "news.google.com" not in url and lookups < website_lookups:
                     lookups += 1
-                    site = find_website(it["link"], x["company"])
+                    site, more = article_info(it["link"], x["company"])
+                    founders = founders or more
                     time.sleep(0.5)
                 region = "India" if (region_hint == "India" or x["india"]) else "Global"
                 added += store(dict(company=x["company"], amount=x["amount"], amount_usd=x["amount_usd"], round=x["round"],
                                     region=region, headline=title, url=it["link"], source=source,
-                                    published_at=it["date"], website=site))
+                                    published_at=it["date"], website=site, founders=founders))
             db.log_run(tag, True, len(items), added)
             print(f"[{tag}] ok: {len(items)} items, {added} new funding stories")
         except Exception as e:

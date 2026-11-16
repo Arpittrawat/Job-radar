@@ -1,5 +1,5 @@
 """Writes docs/jobs.json from radar.db. The cloud dashboard (docs/index.html) reads this file."""
-import json, os
+import json, os, re, urllib.parse
 from datetime import datetime, timezone, timedelta
 import db
 
@@ -32,7 +32,7 @@ def main():
         cut = show_from()
         jobs = [{k: r[k] for k in FIELDS} for r in c.execute(
             "SELECT * FROM jobs ORDER BY COALESCE(posted_at, first_seen_at) DESC")
-            if (_dt(r["first_seen_at"]) or cut) >= cut][:3000]
+            if (_dt(r["first_seen_at"]) or cut) >= cut and not r["possible_dupe_of"]][:3000]
         if c.execute("SELECT 1 FROM sqlite_master WHERE name='details'").fetchone():
             det = {r["job_id"]: r["data"] for r in c.execute("SELECT job_id, data FROM details")}
             for j in jobs:
@@ -49,12 +49,28 @@ def main():
         if c.execute("SELECT 1 FROM sqlite_master WHERE name='funding'").fetchone():
             since = (datetime.now(timezone.utc) - timedelta(days=21)).isoformat(timespec="seconds")
             funding = [dict(r) for r in c.execute(
-                """SELECT id, company, amount, amount_usd, round, region, headline, url, source, published_at, first_seen_at, website
-                   FROM funding WHERE COALESCE(published_at, first_seen_at) >= ?
+                """SELECT * FROM funding WHERE COALESCE(published_at, first_seen_at) >= ?
                    ORDER BY COALESCE(published_at, first_seen_at) DESC LIMIT 400""", (since,))]
             import funding as _f
+            # founders already known from YC job pages (real LinkedIn profiles), keyed by company
+            yc_founders = {}
+            for j in jobs:
+                for p in (j.get("d") or {}).get("people", []):
+                    if p.get("role") == "Founder" and p.get("linkedin"):
+                        yc_founders.setdefault(_f.norm_company(re.sub(r"\s*\([A-Z]\d{2}\)$", "", j["company"])), []).append(
+                            dict(name=p["name"], title=p.get("title", ""), linkedin=p["linkedin"]))
             seen, uniq = set(), []
             for r in funding:  # drop repeats of the same company and generic headlines stored by older versions
+                r.pop("dedupe_key", None)
+                r["company"] = _f.clean_name(r["company"]) or r["company"]
+                try:
+                    names = json.loads(r.get("founders") or "[]")
+                except Exception:
+                    names = []
+                r["founders"] = yc_founders.get(_f.norm_company(r["company"])) or [
+                    dict(name=n, title="Founder", linkedin="", search="https://www.linkedin.com/search/results/people/?"
+                         + urllib.parse.urlencode({"keywords": f"{n} {r['company']}"})) for n in names]
+                r["founders_search"] = "https://www.linkedin.com/search/results/people/?" + urllib.parse.urlencode({"keywords": f"{r['company']} founder"})
                 k = _f.norm_company(r["company"])
                 if k in seen or _f.GENERIC.search(r["company"]):
                     continue

@@ -167,7 +167,7 @@ def enrich_job(job):
                 company["yc_url"] = m.group(1)
     elif job["source"] == "hn":
         desc = hn_text(job["external_id"])
-    elif job["source"] == "a16z":
+    elif job["source"] != "trueup":
         page, final = _get(job["url"])
         desc, site = parse_generic(page)
         company["website"] = site
