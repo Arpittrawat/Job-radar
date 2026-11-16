@@ -1,4 +1,5 @@
 {
+  "show_from": "2026-11-14T00:00+05:30",
   "interval_note": "Runs at 09:00 and 21:00 IST via launchd (step 6). Not used by step 1.",
   "tags": {
     "GTM engineer": ["gtm engineer", "go-to-market engineer", "go to market engineer"],
