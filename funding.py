@@ -16,6 +16,7 @@ FEEDS = [
     ("TechCrunch", "https://techcrunch.com/category/venture/feed/", None),
     ("Crunchbase News", "https://news.crunchbase.com/feed/", None),
     ("Entrackr", "https://entrackr.com/feed/", "India"),
+    ("Entrackr", gnews("site:entrackr.com raises"), "India"),
     ("Inc42", "https://inc42.com/feed/", "India"),
     ("YourStory", "https://yourstory.com/feed", "India"),
     ("Google News", gnews('startup raises "seed round" OR "Series A" OR "pre-seed"'), None),
@@ -26,6 +27,7 @@ VERB = r"(?:raises?|raised|secures?|secured|bags?|bagged|lands?|landed|closes?|c
 FUND_WORDS = re.compile(r"\b(raise[sd]?|funding|secures?|bags?|series [a-h]\b|seed|pre-seed|round)\b", re.I)
 AMOUNT = re.compile(
     r"(?P<cur>\$|US\$|USD\s?|₹|Rs\.?\s?|INR\s?|€|£)\s?(?P<num>\d+(?:[.,]\d+)?)\s?(?P<unit>billion|bn|b\b|million|mn|mln|m\b|crore|cr\b|lakh|k\b)?", re.I)
+GENERIC = re.compile(r"(^|\s)(india|indian|us|uk|europe|european|global|asian|african|chinese|american|these|why|how|top|startups?|firms?|companies|founders|investors|vcs|sector|market|deep-?tech|ai startups|week|month|year)(['’]s)?(\s|$)", re.I)
 ROUND = re.compile(r"\b(pre[- ]seed|seed|angel|pre[- ]series [a-h]|series [a-h]\d?|bridge|growth|debt|venture debt|ipo)\b", re.I)
 INDIA = re.compile(r"\b(india|indian|bengaluru|bangalore|mumbai|delhi|gurugram|gurgaon|noida|pune|hyderabad|chennai)\b|₹|crore|\bRs\b", re.I)
 MEDIA_NAMES = {"techcrunch","crunchbase","entrackr","inc42","yourstory","google","googleapis","gstatic","twitter","facebook","linkedin","instagram",
@@ -104,10 +106,10 @@ def extract(title, summary=""):
         return None
     pre = m.group("pre").strip(" ,:-‘’'\"")
     # "Fintech startup Acme" / "Bengaluru-based Acme" / "AI agent maker Acme" -> "Acme"
-    pre = re.split(r"\b(?:startup|start-up|platform|maker|company|firm|provider|developer|unicorn|player|brand|app|based)\s+", pre, flags=re.I)[-1]
+    pre = re.split(r"\b(?:startup|start-up|platform|maker|company|firm|provider|developer|unicorn|player|brand|app|based|backer|investor|owner|parent|operator|builder|specialist)\s+", pre, flags=re.I)[-1]
     pre = re.sub(r"^(?:ai|fintech|healthtech|edtech|d2c|saas|b2b|stealth)\s+", "", pre, flags=re.I).strip()
     pre = re.sub(r"[’']s$", "", pre).strip(" ,")
-    if not pre or len(pre) > 50 or len(pre.split()) > 6:
+    if not pre or len(pre) > 40 or len(pre.split()) > 4 or GENERIC.search(pre) or not re.match(r"[A-Z0-9]", pre):
         return None
     blob = t + " " + (summary or "")
     am = AMOUNT.search(t) or AMOUNT.search(summary or "")
@@ -143,8 +145,13 @@ def init():
             company TEXT, amount TEXT, amount_usd REAL, round TEXT, region TEXT,
             headline TEXT, url TEXT, source TEXT, published_at TEXT, first_seen_at TEXT, website TEXT)""")
 
-def _key(company, rnd):
-    return hashlib.sha1((re.sub(r"[^a-z0-9]", "", company.lower()) + "|" + (rnd or "").lower()).encode()).hexdigest()
+def norm_company(company):
+    c = re.sub(r"\b(ai|labs?|inc|technologies|technology|tech|hq|app|io|co|ltd|pvt|private|limited)\b", " ", company.lower())
+    return re.sub(r"[^a-z0-9]", "", c) or re.sub(r"[^a-z0-9]", "", company.lower())
+
+def _key(company, rnd=None):
+    """One story per company: the same raise reported by several sites (or with/without the round name) is kept once."""
+    return hashlib.sha1(norm_company(company).encode()).hexdigest()
 
 def store(item):
     """Insert if new. Same company+round within 30 days counts as a duplicate."""
@@ -172,7 +179,7 @@ def run(max_age_days=7, website_lookups=25):
                 if it["date"] and it["date"] < cutoff:
                     continue
                 title, source = it["title"], name
-                if name == "Google News":
+                if "news.google.com" in url:
                     parts = title.rsplit(" - ", 1)
                     if len(parts) == 2:
                         title, source = parts[0], parts[1]
@@ -185,7 +192,7 @@ def run(max_age_days=7, website_lookups=25):
                     if c.execute("SELECT 1 FROM funding WHERE dedupe_key=?", (_key(x["company"], x["round"]),)).fetchone():
                         continue
                 site = None
-                if name != "Google News" and lookups < website_lookups:
+                if "news.google.com" not in url and lookups < website_lookups:
                     lookups += 1
                     site = find_website(it["link"], x["company"])
                     time.sleep(0.5)

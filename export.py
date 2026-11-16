@@ -33,6 +33,14 @@ def main():
         jobs = [{k: r[k] for k in FIELDS} for r in c.execute(
             "SELECT * FROM jobs ORDER BY COALESCE(posted_at, first_seen_at) DESC")
             if (_dt(r["first_seen_at"]) or cut) >= cut][:3000]
+        if c.execute("SELECT 1 FROM sqlite_master WHERE name='details'").fetchone():
+            det = {r["job_id"]: r["data"] for r in c.execute("SELECT job_id, data FROM details")}
+            for j in jobs:
+                if j["id"] in det:
+                    try:
+                        j["d"] = json.loads(det[j["id"]])
+                    except Exception:
+                        pass
         allh = [dict(r) for r in c.execute(
             "SELECT source, MAX(ran_at) ran_at, ok, error FROM runs GROUP BY source")]
         health = [h for h in allh if not h["source"].startswith("f:")]
@@ -44,6 +52,14 @@ def main():
                 """SELECT id, company, amount, amount_usd, round, region, headline, url, source, published_at, first_seen_at, website
                    FROM funding WHERE COALESCE(published_at, first_seen_at) >= ?
                    ORDER BY COALESCE(published_at, first_seen_at) DESC LIMIT 400""", (since,))]
+            import funding as _f
+            seen, uniq = set(), []
+            for r in funding:  # drop repeats of the same company and generic headlines stored by older versions
+                k = _f.norm_company(r["company"])
+                if k in seen or _f.GENERIC.search(r["company"]):
+                    continue
+                seen.add(k); uniq.append(r)
+            funding = uniq
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:
         json.dump({"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

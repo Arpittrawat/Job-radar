@@ -60,6 +60,11 @@ if __name__ == "__main__":
         funding.run()
     except Exception as e:
         print(f"[funding] FAILED: {e}")
+    try:
+        import enrich
+        enrich.run()
+    except Exception as e:
+        print(f"[details] FAILED: {e}")
     n = count_new_matches(before)
     print(f"{n} new matching jobs this run")
     if not first_ever:                 # no notification for the very first baseline run
