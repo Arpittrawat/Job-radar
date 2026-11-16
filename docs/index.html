@@ -2,26 +2,26 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#EEDDD3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1A1218" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Job Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --base:#EEDDD3; --b1:#F2B89A; --b2:#E3B3C8; --b3:#F1D6A4; --b4:#CFC6EA;
-  --g:rgba(255,255,255,.42); --gb:rgba(255,255,255,.65); --hi:rgba(255,255,255,.9); --spec:rgba(255,255,255,.55); --sh:rgba(90,50,40,.14);
-  --card:rgba(255,253,251,.86); --cardsolid:#FDF8F5; --tile:rgba(255,253,251,.78);
-  --ink:#2A1E1C; --mute:rgba(42,30,28,.56); --faint:rgba(42,30,28,.32); --sep:rgba(42,30,28,.09); --fill:rgba(42,30,28,.06);
-  --blue:#0A6CFF; --hot:#C2571A; --green:#248A3D; --red:#D70015; --on:rgba(255,255,255,.62);
+  --base:#F2F2F7; --b1:#C9DDF7; --b2:#D3ECF2; --b3:#E2E4F3; --b4:#DCE8FA;
+  --g:rgba(255,255,255,.55); --gb:rgba(255,255,255,.7); --hi:rgba(255,255,255,.95); --spec:rgba(255,255,255,.5); --sh:rgba(0,0,0,.07);
+  --card:rgba(255,255,255,.74); --cardsolid:#FFFFFF; --tile:rgba(255,255,255,.66);
+  --ink:#1D1D1F; --mute:rgba(60,60,67,.6); --faint:rgba(60,60,67,.3); --sep:rgba(60,60,67,.12); --fill:rgba(118,118,128,.12);
+  --dim:rgba(242,242,247,.62); --blue:#007AFF; --hot:#1D1D1F; --green:#34C759; --red:#FF3B30; --on:rgba(118,118,128,.16);
   --spring:cubic-bezier(.32,.72,0,1);
 }
 @media (prefers-color-scheme:dark){:root{
-  --base:#1A1218; --b1:#7A3B4E; --b2:#B8662E; --b3:#4B3A78; --b4:#5A2F4A;
-  --g:rgba(40,30,38,.4); --gb:rgba(255,255,255,.16); --hi:rgba(255,255,255,.28); --spec:rgba(255,255,255,.14); --sh:rgba(0,0,0,.45);
-  --card:rgba(30,22,28,.84); --cardsolid:#211820; --tile:rgba(30,22,28,.72);
-  --ink:#F7EDE8; --mute:rgba(247,237,232,.56); --faint:rgba(247,237,232,.3); --sep:rgba(255,255,255,.08); --fill:rgba(255,255,255,.07);
-  --blue:#3D95FF; --hot:#FFB066; --green:#30D158; --red:#FF6961; --on:rgba(255,255,255,.13);
+  --base:#000000; --b1:#0B2549; --b2:#062F38; --b3:#151A3A; --b4:#0D2240;
+  --g:rgba(30,30,32,.38); --gb:rgba(255,255,255,.14); --hi:rgba(255,255,255,.22); --spec:rgba(255,255,255,.08); --sh:rgba(0,0,0,.5);
+  --card:rgba(22,22,24,.62); --cardsolid:#1C1C1E; --tile:rgba(40,40,42,.5);
+  --ink:#F5F5F7; --mute:rgba(235,235,245,.6); --faint:rgba(235,235,245,.3); --sep:rgba(84,84,88,.5); --fill:rgba(118,118,128,.24);
+  --dim:rgba(0,0,0,.18); --blue:#0A84FF; --hot:#FFFFFF; --green:#30D158; --red:#FF453A; --on:rgba(118,118,128,.32);
 }}
 @media (prefers-reduced-transparency:reduce){:root{--g:var(--cardsolid);--card:var(--cardsolid);--tile:var(--cardsolid)}}
 *{box-sizing:border-box;margin:0}
@@ -35,14 +35,20 @@ button{background:none;border:0;cursor:pointer}
 
 /* ambient background */
 .wall{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--base)}
-.wall i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.85}
+.wall i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.75}
 .wall i:nth-child(1){width:70vw;height:70vh;left:-18vw;top:-25vh;background:var(--b1)}
 .wall i:nth-child(2){width:60vw;height:65vh;right:-15vw;top:12vh;background:var(--b2)}
 .wall i:nth-child(3){width:55vw;height:55vh;left:22vw;bottom:-28vh;background:var(--b3)}
 .wall i:nth-child(4){width:40vw;height:40vh;left:42vw;top:-15vh;background:var(--b4);opacity:.7}
+/* optional photo: put bg.jpg in the docs folder. A dim layer keeps text readable. */
+.wall::before{content:"";position:absolute;inset:0;z-index:1;
+  background:url("bg.jpg") center/cover no-repeat}
+.wall::after{content:"";position:absolute;inset:0;background:var(--dim);z-index:2}
 
 /* glass material: functional layer only */
-.glass{position:relative;background:var(--g);backdrop-filter:blur(34px) saturate(1.6);-webkit-backdrop-filter:blur(34px) saturate(1.6);
+/* content material: thick, blurred, lets the wallpaper tint through (Apple 'regular material') */
+.list,.hero,.fact,.grp{backdrop-filter:blur(44px) saturate(1.8);-webkit-backdrop-filter:blur(44px) saturate(1.8);border:1px solid var(--gb)}
+.glass{position:relative;background:var(--g);backdrop-filter:blur(40px) saturate(1.9);-webkit-backdrop-filter:blur(40px) saturate(1.9);
   border:1px solid var(--gb);box-shadow:inset 0 1px 0 var(--hi),0 12px 40px var(--sh)}
 .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:linear-gradient(140deg,var(--spec) 0%,transparent 38%,transparent 70%,rgba(255,255,255,.08) 100%)}
@@ -51,11 +57,13 @@ button{background:none;border:0;cursor:pointer}
 /* ---------- desktop ---------- */
 .app{display:grid;grid-template-columns:250px 400px 1fr;gap:12px;height:100vh;padding:14px}
 .side{border-radius:24px;padding:22px 12px 16px;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
-.brand{font-size:15px;font-weight:700;padding:0 10px 18px;letter-spacing:-.02em}
+.brand{font-size:13px;font-weight:600;color:var(--mute);padding:2px 10px 14px}
 .sh{font-size:11px;font-weight:600;color:var(--mute);padding:16px 10px 6px}
 .si{display:flex;align-items:center;width:100%;padding:7px 10px;border-radius:11px;font-size:13.5px;text-align:left;position:relative;transition:background .2s var(--spring)}
 .si:hover{background:var(--fill)}
-.si[aria-pressed=true]{background:var(--on);font-weight:600;box-shadow:inset 0 1px 0 var(--hi)}
+.si[aria-pressed=true]{background:var(--on);font-weight:600}
+.sic{width:17px;height:17px;margin-right:9px;color:var(--blue);flex:none}
+.si.zero .sic{color:inherit}
 .si .ct{margin-left:auto;color:var(--mute);font-weight:400;font-size:12px}
 .si.zero{opacity:.38}
 .si[aria-pressed=true] .ct{font-size:11px}
@@ -67,19 +75,20 @@ button{background:none;border:0;cursor:pointer}
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .35s var(--spring)}
 .sw[aria-checked=true] .switch{background:var(--green)}
 .sw[aria-checked=true] .switch::after{transform:translateX(14px)}
+.credit{display:block;padding:6px 10px 0;font-size:10px;color:var(--faint);text-decoration:none}
 .side-foot{margin-top:auto;padding:14px 10px 0;font-size:11px;color:var(--mute);line-height:1.6}
 .bad{color:var(--red)}
 
-.list{background:var(--card);border-radius:24px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 12px 40px var(--sh)}
+.list{background:var(--card);border-radius:22px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 12px 40px var(--sh)}
 .list-head{padding:22px 20px 8px}
-.list-head h1{font-size:26px;font-weight:700;letter-spacing:-.025em}
+.list-head h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
 .list-head p{font-size:12px;color:var(--mute);margin-top:3px}
 .rows{overflow-y:auto;flex:1;padding:0 10px 24px;outline:none}
-.day{font-size:12px;font-weight:600;color:var(--mute);padding:14px 12px 6px;position:sticky;top:0;background:var(--cardsolid);z-index:2}
+.day{font-size:12px;font-weight:600;color:var(--mute);padding:14px 12px 6px}
 .row{display:block;width:100%;text-align:left;padding:10px 12px 11px 24px;border-radius:13px;position:relative;transition:background .15s}
 .row+.row::before{content:"";position:absolute;left:24px;right:12px;top:0;border-top:1px solid var(--sep)}
 .row:hover{background:var(--fill)}
-.row[aria-selected=true]{background:var(--blue);color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--blue) 30%,transparent)}
+.row[aria-selected=true]{background:var(--blue);color:#fff}
 .row[aria-selected=true]::before,.row[aria-selected=true]+.row::before{border-color:transparent}
 .r1{display:flex;align-items:baseline;gap:8px;font-size:13px}
 .r1 b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -105,23 +114,62 @@ button{background:none;border:0;cursor:pointer}
 .pill svg{flex:none;opacity:.55}
 .detail-inner{max-width:760px;animation:fadein .3s var(--spring)}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}}
-.hero{background:var(--card);border-radius:24px;padding:30px 32px 32px;box-shadow:0 12px 40px var(--sh)}
+.hero{background:var(--card);border-radius:22px;padding:28px 30px 30px;box-shadow:0 1px 2px var(--sh),0 8px 30px var(--sh)}
 .d-co{font-size:13px;color:var(--mute)}
-.d-title{font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-.028em;margin:8px 0 8px}
+.d-title{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,sans-serif;font-size:28px;line-height:1.18;font-weight:700;letter-spacing:-.012em;margin:6px 0 6px}
 .d-sub{font-size:15px;color:var(--mute)}
 .d-sub .hot{color:var(--hot);font-weight:600}
 .actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 22px;border-radius:21px;font-size:14px;font-weight:600;text-decoration:none;transition:transform .25s var(--spring),filter .2s}
 .btn:active{transform:scale(.95)}
-.btn.primary{background:var(--blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px color-mix(in srgb,var(--blue) 32%,transparent)}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
 .btn.primary:hover{filter:brightness(1.07)}
 .btn.glass{color:var(--ink)}
 .btn.done{color:var(--green)}
 .facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
-.fact{background:var(--tile);border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px var(--sh)}
+.fact{background:var(--tile);border-radius:16px;padding:13px 16px;box-shadow:0 1px 2px var(--sh)}
 .fact small{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
 .fact span{font-size:14px;font-weight:500}
-.headline{margin-top:16px;font-size:15px;line-height:1.45;color:var(--mute);font-style:italic;max-width:62ch}
+/* Apple grouped sections */
+.sec{margin-top:26px;max-width:760px}
+.sec h3{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 7px 16px}
+.glist{background:var(--card);border:1px solid var(--gb);border-radius:14px;overflow:hidden;backdrop-filter:blur(44px) saturate(1.8);-webkit-backdrop-filter:blur(44px) saturate(1.8)}
+.glist.pad{padding:14px 16px}
+.prow{display:flex;gap:12px;align-items:center;padding:12px 14px 12px 16px;position:relative}
+.prow+.prow::before{content:"";position:absolute;top:0;left:62px;right:0;border-top:1px solid var(--sep)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:600;color:#fff;flex:none;background:linear-gradient(180deg,#8E8E93,#636366)}
+.av-f{background:linear-gradient(180deg,#5AC8FA,#007AFF)}.av-m{background:linear-gradient(180deg,#A78BFA,#5E5CE6)}.av-h{background:linear-gradient(180deg,#8E8E93,#48484A)}.av-e{background:linear-gradient(180deg,#34C759,#248A3D)}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role{font-size:11px;font-weight:500;color:var(--mute);background:var(--fill);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.ptitle{font-size:13px;color:var(--mute);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meters{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap}
+.gm{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--mute)}
+.gm-bar{width:54px;height:4px;border-radius:2px;background:var(--fill);overflow:hidden}
+.gm-bar i{display:block;height:100%;background:var(--blue);border-radius:2px}
+.gm:nth-child(2) .gm-bar i{background:var(--ink);opacity:.7}
+.gm-v{font-weight:600;color:var(--ink);min-width:28px}
+.pact{display:flex;gap:6px;flex:none}
+.pill-btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:14px;background:var(--fill);color:var(--ink);font-size:12px;font-weight:600;text-decoration:none}
+.pill-btn svg{width:13px;height:13px}
+.pill-btn:hover{background:var(--on)}
+.pill-btn.blue{background:var(--blue);color:#fff}
+.need{display:flex;gap:16px;align-items:flex-start}
+.need-v{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,sans-serif;font-size:34px;font-weight:700;line-height:1;letter-spacing:-.02em;min-width:68px}
+.need-v small{font-size:17px;font-weight:600;color:var(--mute);margin-left:1px}
+.need-t{font-size:15px;font-weight:600;margin-bottom:4px}
+.why{margin:0;padding-left:16px;font-size:13px;color:var(--mute);line-height:1.5}
+.btn.wide{width:100%;margin-top:10px;height:44px}
+.hint{font-size:12px;color:var(--mute);margin:7px 16px 0}
+.facts-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
+.facts-line a{color:var(--blue);text-decoration:none}
+.dot-sep{width:3px;height:3px;border-radius:50%;background:var(--faint)}
+.desc{white-space:pre-line;font-size:14px;line-height:1.55;max-height:220px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.desc.open{max-height:none;-webkit-mask-image:none;mask-image:none}
+.more{margin:6px 0 0 16px;color:var(--blue);font-size:14px;font-weight:500}
+.sheet .sec h3{margin-left:4px}
+@media (max-width:899px){.pname{white-space:normal}.prow{align-items:flex-start}.pact{flex-direction:column;align-items:flex-end}}.sheet .prow+.prow::before{left:62px}
+.headline{margin-top:14px;font-size:15px;line-height:1.45;color:var(--mute);max-width:62ch}
 .amt{color:var(--ink);font-weight:700}
 [hidden]{display:none!important}
 .note{margin-top:16px;font-size:13px;color:var(--mute)}
@@ -152,7 +200,7 @@ button{background:none;border:0;cursor:pointer}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 8px;margin:0 -16px;scrollbar-width:none}
   .chips::-webkit-scrollbar{display:none}
   .chip{flex:none;border-radius:19px;padding:7px 15px;font-size:15px;font-weight:500;white-space:nowrap;transition:background .2s,color .2s}
-  .chip[aria-pressed=true]{background:var(--ink);color:var(--base);border-color:transparent;box-shadow:0 6px 16px var(--sh)}
+  .chip[aria-pressed=true]{background:var(--blue);color:#fff;border-color:transparent}
   .chip[aria-pressed=true]::before{display:none}
   .chip.glass{box-shadow:inset 0 1px 0 var(--hi)}
   .gh{font-size:13px;color:var(--mute);text-transform:uppercase;padding:20px 16px 7px}
@@ -190,7 +238,7 @@ button{background:none;border:0;cursor:pointer}
 .scrim{position:fixed;inset:0;background:rgba(40,20,20,.28);opacity:0;pointer-events:none;transition:opacity .4s var(--spring);z-index:20}
 .sheet{position:fixed;left:8px;right:8px;bottom:8px;max-height:86vh;overflow-y:auto;border-radius:38px;z-index:21;
   padding:10px 22px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(110%);transition:transform .5s var(--spring);
-  --g:color-mix(in srgb,var(--cardsolid) 70%,transparent);visibility:hidden}
+  --g:color-mix(in srgb,var(--cardsolid) 90%,transparent);visibility:hidden}
 .sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--faint);margin:0 auto 10px}
 .sheet .done-btn{position:absolute;right:22px;top:20px;color:var(--blue);font-size:17px;font-weight:600;z-index:2}
 .sheet .detail-inner{animation:none}
@@ -220,6 +268,7 @@ button{background:none;border:0;cursor:pointer}
     </div>
     <div id="s-fundf" hidden><div class="sh">Region</div><div id="s-fregion"></div><div class="sh">Round</div><div id="s-fround"></div></div>
     <div class="side-foot" id="s-foot"></div>
+    <a class="credit" href="https://unsplash.com/photos/starry-night-sky-over-snow-covered-mountains-ktllNfb9cBs" target="_blank" rel="noopener">Photo: Marek Piwnicki, Unsplash</a>
   </nav>
   <section class="list" aria-label="Jobs">
     <div class="list-head"><h1 id="l-title">New</h1><p id="l-sub"></p></div>
@@ -304,7 +353,7 @@ function fdetailHTML(f,sheet){
       <div class="d-co">Funding news from ${esc(f.source||"the web")}</div>
       <h2 class="d-title">${esc(f.company)}</h2>
       <div class="d-sub">Raised ${f.amount?`<b class="amt">${esc(f.amount)}</b>`:"funding"}${f.round?" in a "+esc(f.round)+" round":""}. Reported <span class="${fhot(f)?"hot":""}">${long(fwhen(f)).toLowerCase()}</span>.</div>
-      <p class="headline">“${esc(f.headline)}”</p>
+      <p class="headline">${esc(f.headline)}</p>
       <div class="actions"><a class="btn primary" href="${esc(f.url)}" target="_blank" rel="noopener">Read News</a>
         <a class="btn glass" href="${esc(fsite(f))}" target="_blank" rel="noopener">${f.website?"Company Website":"Find Website"}</a></div>
     </div>
@@ -351,8 +400,13 @@ const emptyCopy=()=>filtering()?["No Results","Try another search or clear a fil
   {new:DATA.show_from&&new Date(DATA.show_from)>new Date()?["Starting Fresh Tomorrow","Old jobs are cleared. New matches show up from the 9 AM scan."]:["You're All Caught Up","New matches appear after the next scan, around 9 AM and 9 PM."],applied:["No Applications Yet","Mark a job as applied and it shows up here."],all:["No Jobs Yet","Jobs appear after the first scan."]}[S.view];
 
 /* ---------- desktop ---------- */
+const ICON={new:'<path d="M3 13.5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4.5M3 13.5 5.6 5.4A2 2 0 0 1 7.5 4h9a2 2 0 0 1 1.9 1.4l2.6 8.1M3 13.5h5l1.5 2.5h5l1.5-2.5h5"/>',
+  applied:'<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.7 2.7L16 9.6"/>',
+  all:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r=".6" fill="currentColor"/><circle cx="4" cy="12" r=".6" fill="currentColor"/><circle cx="4" cy="18" r=".6" fill="currentColor"/>',
+  funding:'<path d="M4 18l5-6 4 3 7-9"/><path d="M15 6h5v5"/>'};
 function sideItem(group,val,label,count){const on=S[group]===val;
-  return`<button class="si ${count===0&&!on?"zero":""}" data-g="${group}" data-v="${esc(val)}" aria-pressed="${on}">${esc(label)}<span class="ct">${on&&group!=="view"?"✕":count??""}</span></button>`}
+  const ic=group==="view"?`<svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[val]}</svg>`:"";
+  return`<button class="si ${count===0&&!on?"zero":""}" data-g="${group}" data-v="${esc(val)}" aria-pressed="${on}">${ic}${esc(label)}<span class="ct">${on&&group!=="view"?"✕":count??""}</span></button>`}
 function renderSide(){const c=counts(),pool=base(applied());
   const cnt=(k,v)=>pool.filter(j=>matches(j,k)&&(k==="loc"?inLoc(j,v):k==="role"?j.tag===v:j.source===v)).length;
   $("s-views").innerHTML=sideItem("view","new","New",c.new)+sideItem("view","applied","Applied",c.applied)+sideItem("view","all","All Jobs",c.all)
@@ -397,7 +451,37 @@ function detailHTML(j,sheet){
       <div class="fact"><small>Board</small><span>${esc(BOARD[j.source]||j.source)}</span></div>
       <div class="fact"><small>First seen</small><span>${clock(j.first_seen_at)}</span></div></div>
     ${j.possible_dupe_of?'<p class="note">This role is also listed on another board.</p>':""}
-    ${sheet?"":'<p class="kbd"><kbd>↑</kbd><kbd>↓</kbd> move &nbsp; <kbd>↵</kbd> open job &nbsp; <kbd>A</kbd> mark as applied &nbsp; <kbd>/</kbd> search</p>'}</div>`}
+    ${jobExtras(j)}
+    ${sheet?"":'<p class="kbd"><kbd>↑</kbd><kbd>↓</kbd> move &nbsp; <kbd>↵</kbd> open job &nbsp; <kbd>A</kbd> mark as applied &nbsp; <kbd>E</kbd> get emails &nbsp; <kbd>/</kbd> search</p>'}</div>`}
+const initials=n=>(n||"?").replace(/[^A-Za-z ]/g,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
+const meter=(label,v)=>`<div class="gm"><span class="gm-l">${label}</span><span class="gm-bar"><i style="width:${Math.max(4,v||0)}%"></i></span><span class="gm-v">${v==null?"—":v+"%"}</span></div>`;
+const LI='<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.5 8.8H3.6V20h2.9V8.8zM5 4a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 5 4zm15 9.6c0-3-1.6-4.9-4.2-4.9-1.4 0-2.4.7-2.9 1.5V8.8H10V20h2.9v-5.9c0-1.5.6-2.6 2-2.6 1.3 0 2 .9 2 2.6V20H20v-6.4z"/></svg>';
+function jobExtras(j){const d=j.d;
+  if(!d)return`<p class="note">People and the job description appear after the next scan.</p>`;
+  if(d.error&&!d.people?.length)return`<p class="note">Couldn't read this job page (${esc(d.error)}). Use Open Job instead.</p>`;
+  const people=(d.people||[]).map(p=>{
+    const link=p.linkedin?`<a class="pill-btn" href="${esc(p.linkedin)}" target="_blank" rel="noopener" aria-label="LinkedIn">${LI}<span>Profile</span></a>`
+      :p.search?`<a class="pill-btn" href="${esc(p.search)}" target="_blank" rel="noopener">${LI}<span>Find</span></a>`:"";
+    const mail=p.email?`<a class="pill-btn blue" href="mailto:${esc(p.email)}">Email</a>`:"";
+    return`<div class="prow"><span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${p.email&&!p.linkedin&&p.role==="From the post"?"@":esc(initials(p.name))}</span>
+      <div class="pinfo"><div class="pname">${esc(p.name)} <span class="role">${esc(p.role)}</span></div><div class="ptitle">${esc(p.title||"")}</div>
+        <div class="meters">${meter("Worth emailing",p.need)}${meter("Email findable",p.exists)}</div></div>
+      <div class="pact">${mail}${link}</div></div>`}).join("");
+  const c=d.company||{},facts=[c.website?`<a href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//,"").replace(/\/$/,""))}</a>`:"",
+    c.team_size?`${c.team_size} people`:"",c.batch?`YC ${esc(c.batch)}`:""].filter(Boolean);
+  return`<section class="sec"><h3>Outreach</h3><div class="glist pad">
+      <div class="need"><div class="need-v">${d.need??"—"}<small>%</small></div><div><div class="need-t">Worth emailing someone directly</div>
+      <ul class="why">${(d.why||[]).map(w=>`<li>${esc(w)}</li>`).join("")||"<li>No strong signal either way. Applying normally is fine.</li>"}</ul></div></div></div></section>
+    <section class="sec"><h3>People</h3><div class="glist">${people||'<div class="prow"><div class="ptitle">No people found yet.</div></div>'}</div>
+      <button class="btn glass wide" data-getemails="${j.id}">Get Emails from Claude</button>
+      <p class="hint">Copies a request. Paste it in your Claude chat and pick who's worth a credit.</p></section>
+    ${facts.length?`<section class="sec"><h3>Company</h3><div class="glist pad facts-line">${facts.join('<span class="dot-sep"></span>')}</div></section>`:""}
+    ${d.description?`<section class="sec"><h3>About the Role</h3><div class="glist pad desc" id="desc-${j.id}">${esc(d.description)}</div>
+      <button class="more" data-more="${j.id}">Show More</button></section>`:""}`}
+function emailRequest(j){const d=j.d||{},ppl=(d.people||[]).filter(p=>p.role!=="From the post");
+  return`Get emails for ${j.company} (${j.title}). Job: ${j.url}\n`+ppl.map(p=>`- ${p.role}: ${p.name}${p.title?" ("+p.title+")":""}${p.linkedin?" "+p.linkedin:""} [worth ${p.need}%, findable ${p.exists}%]`).join("\n")}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch(_){ }a.remove();return ok}}
 function renderDetail(){$("detail").innerHTML=isF()?fdetailHTML((DATA.funding||[]).find(f=>f.id===S.fsel),false):detailHTML(DATA.jobs.find(j=>j.id===S.sel),false)}
 
 /* ---------- phone ---------- */
@@ -419,7 +503,7 @@ function renderPhone(){
   for(const j of rows){const d=dayOf(when(j));if(d!==g){if(open)h+="</div>";g=d;h+=`<div class="gh">${d}</div><div class="grp">`;open=true}
     const done=!!ap[j.id];
     h+=`<button class="mrow ${done?"done":""}" data-open="${j.id}"><span class="mdot ${done?"done":fresh(j,ap)?"on":""}"></span>
-      <span class="mtx"><span class="mt">${esc(j.title)}</span><span class="ms">${esc(j.company)}, ${esc(j.location||"location not listed")}</span></span>
+      <span class="mtx"><span class="gm">${esc(j.title)}</span><span class="ms">${esc(j.company)}, ${esc(j.location||"location not listed")}</span></span>
       <span class="mage ${hot(j)?"hot":""}">${short(when(j))}</span><span class="chev">›</span></button>`}
   if(open)h+="</div>";
   const e=emptyCopy();
@@ -436,7 +520,7 @@ function renderFundPhone(){const rows=frows();
   let h="",g=null,open=false;
   for(const f of rows){const d=dayOf(fwhen(f));if(d!==g){if(open)h+="</div>";g=d;h+=`<div class="gh">${d}</div><div class="grp">`;open=true}
     h+=`<button class="mrow" data-fopen="${f.id}"><span class="mdot"></span>
-      <span class="mtx"><span class="mt">${esc(f.company)}</span><span class="ms">${esc([f.amount,f.round].filter(Boolean).join(" "))}${f.source?", "+esc(f.source):""}</span></span>
+      <span class="mtx"><span class="gm">${esc(f.company)}</span><span class="ms">${esc([f.amount,f.round].filter(Boolean).join(" "))}${f.source?", "+esc(f.source):""}</span></span>
       <span class="mage ${fhot(f)?"hot":""}">${short(fwhen(f))}</span><span class="chev">›</span></button>`}
   if(open)h+="</div>";
   $("m-list").innerHTML=h||`<div class="empty"><div><h2>${filtering()?"No Results":"No Funding News Yet"}</h2><p>${filtering()?"Try another search or clear a filter.":"Stories appear after the next scan."}</p></div></div>`;
@@ -464,6 +548,9 @@ document.addEventListener("click",e=>{
   const si=e.target.closest(".si,.chip");
   if(si){const g=si.dataset.g,v=si.dataset.v;S[g]=g==="view"?v:(S[g]===v&&v!==""?"":v);S.sel=null;render();return}
   const r=e.target.closest(".row");if(r){if(r.dataset.fid)S.fsel=Number(r.dataset.fid);else S.sel=Number(r.dataset.id);renderList();renderDetail();return}
+  const ge=e.target.closest("[data-getemails]");if(ge){const j=DATA.jobs.find(x=>String(x.id)===ge.dataset.getemails);
+    if(j)copyText(emailRequest(j)).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy. Select the text manually."));return}
+  const mo2=e.target.closest("[data-more]");if(mo2){const el=document.getElementById("desc-"+mo2.dataset.more);if(el){el.classList.toggle("open");mo2.textContent=el.classList.contains("open")?"Show Less":"Show More"}return}
   const fo=e.target.closest("[data-fopen]");if(fo){openFSheet(Number(fo.dataset.fopen));return}
   const ap=e.target.closest("[data-apply]");if(ap){toggleApplied(ap.dataset.apply);return}
   const mo=e.target.closest("[data-open]");if(mo){openSheet(Number(mo.dataset.open));return}
@@ -492,6 +579,7 @@ document.addEventListener("keydown",e=>{
     renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
   else if(e.key==="Enter"&&S.sel!=null){const j=DATA.jobs.find(x=>x.id===S.sel);if(j)window.open(j.url,"_blank","noopener")}
   else if((e.key==="a"||e.key==="A")&&S.sel!=null&&!e.metaKey&&!e.ctrlKey)toggleApplied(S.sel);
+  else if((e.key==="e"||e.key==="E")&&S.sel!=null&&!e.metaKey&&!e.ctrlKey){const j=DATA.jobs.find(x=>x.id===S.sel);if(j?.d)copyText(emailRequest(j)).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
   else if(e.key==="/"){e.preventDefault();$("q").focus()}
 });
 
