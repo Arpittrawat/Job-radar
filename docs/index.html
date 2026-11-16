@@ -57,6 +57,11 @@ button{background:none;border:0;cursor:pointer}
 .si:hover{background:var(--fill)}
 .si[aria-pressed=true]{background:var(--on);font-weight:600;box-shadow:inset 0 1px 0 var(--hi)}
 .si .ct{margin-left:auto;color:var(--mute);font-weight:400;font-size:12px}
+.si.zero{opacity:.38}
+.si[aria-pressed=true] .ct{font-size:11px}
+.clear{display:block;margin:0 10px 10px;padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;color:var(--blue);background:var(--on);box-shadow:inset 0 1px 0 var(--hi)}
+.clear[hidden]{display:none}
+.mclear{margin:8px 0 0}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;font-size:13.5px;width:100%;margin-top:8px}
 .switch{width:34px;height:20px;border-radius:10px;background:var(--fill);box-shadow:inset 0 0 0 1px var(--sep);position:relative;transition:background .25s var(--spring);flex:none}
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .35s var(--spring)}
@@ -201,6 +206,7 @@ button{background:none;border:0;cursor:pointer}
 <div class="app" id="app">
   <nav class="side glass" aria-label="Filters">
     <div class="brand">Job Radar</div>
+    <button class="clear" id="s-clear" hidden>Clear filters</button>
     <div id="s-views"></div>
     <div class="sh">Role</div><div id="s-roles"></div>
     <div class="sh">Location</div><div id="s-locs"></div>
@@ -230,6 +236,7 @@ button{background:none;border:0;cursor:pointer}
     <button data-v="new">New</button><button data-v="applied">Applied</button><button data-v="all">All</button></div>
   <div class="chips" id="m-roles" aria-label="Role"></div>
   <div class="chips" id="m-locs" aria-label="Location"></div>
+  <button class="clear mclear" id="m-clear" hidden>Clear filters</button>
   <div id="m-list"></div>
   <button class="sw msw" role="switch" aria-checked="false" id="m-other"><span>Show other titles</span><span class="switch"></span></button>
   <div class="mfoot" id="m-foot"></div>
@@ -270,28 +277,35 @@ const filtering=()=>S.q||S.role||S.loc||S.board;
 
 function base(ap){return DATA.jobs.filter(j=>S.view==="applied"?ap[j.id]:S.view==="new"?isNew(j,ap):true)
   .filter(j=>S.other||j.tag||S.view==="applied")}
-function filtered(){const ap=applied(),q=S.q.toLowerCase();
-  return base(ap).filter(j=>(!S.role||j.tag===S.role)&&(!S.board||j.source===S.board)
-    &&(!S.loc||(","+(j.location_group||"")+",").includes(","+S.loc+","))
-    &&(!q||(j.title||"").toLowerCase().includes(q)||(j.company||"").toLowerCase().includes(q)))
+const inLoc=(j,l)=>(","+(j.location_group||"")+",").includes(","+l+",");
+function matches(j,skip){const q=S.q.toLowerCase();
+  return (skip==="role"||!S.role||j.tag===S.role)&&(skip==="board"||!S.board||j.source===S.board)
+    &&(skip==="loc"||!S.loc||inLoc(j,S.loc))
+    &&(!q||(j.title||"").toLowerCase().includes(q)||(j.company||"").toLowerCase().includes(q))}
+function filtered(){const ap=applied();
+  return base(ap).filter(j=>matches(j))
     .sort((a,b)=>String(when(b)).localeCompare(String(when(a)))).slice(0,600)}
-function counts(){const ap=applied();return{new:DATA.jobs.filter(j=>isNew(j,ap)&&j.tag).length,applied:DATA.jobs.filter(j=>ap[j.id]).length,all:DATA.jobs.length}}
+function counts(){const ap=applied(),m=j=>matches(j);
+  return{new:DATA.jobs.filter(j=>isNew(j,ap)&&(j.tag||S.other)&&m(j)).length,applied:DATA.jobs.filter(j=>ap[j.id]&&m(j)).length,
+    all:DATA.jobs.filter(j=>(j.tag||S.other)&&m(j)).length}}
 function statusLine(){const ap=applied(),since=DATA.jobs.filter(j=>j.tag&&isNew(j,ap)&&fresh(j,ap)).length;
   return DATA.generated_at?`${since?since+" new since your last visit. ":""}Updated ${long(DATA.generated_at).toLowerCase()}`:"Waiting for the first scan"}
 function health(){return DATA.health.length?"Boards: "+DATA.health.map(s=>s.ok?esc(BOARD[s.source]||s.source):`<span class="bad">${esc(BOARD[s.source]||s.source)} failed</span>`).join(", "):""}
 const emptyCopy=()=>filtering()?["No Results","Try another search or clear a filter."]:
-  {new:["You're All Caught Up","New matches appear after the next scan, around 9 AM and 9 PM."],applied:["No Applications Yet","Mark a job as applied and it shows up here."],all:["No Jobs Yet","Jobs appear after the first scan."]}[S.view];
+  {new:DATA.show_from&&new Date(DATA.show_from)>new Date()?["Starting Fresh Tomorrow","Old jobs are cleared. New matches show up from the 9 AM scan."]:["You're All Caught Up","New matches appear after the next scan, around 9 AM and 9 PM."],applied:["No Applications Yet","Mark a job as applied and it shows up here."],all:["No Jobs Yet","Jobs appear after the first scan."]}[S.view];
 
 /* ---------- desktop ---------- */
-function sideItem(group,val,label,count){return`<button class="si" data-g="${group}" data-v="${esc(val)}" aria-pressed="${S[group]===val}">${esc(label)}<span class="ct">${count??""}</span></button>`}
+function sideItem(group,val,label,count){const on=S[group]===val;
+  return`<button class="si ${count===0&&!on?"zero":""}" data-g="${group}" data-v="${esc(val)}" aria-pressed="${on}">${esc(label)}<span class="ct">${on&&group!=="view"?"✕":count??""}</span></button>`}
 function renderSide(){const c=counts(),pool=base(applied());
-  const cnt=(k,v)=>pool.filter(j=>k==="loc"?(","+(j.location_group||"")+",").includes(","+v+","):k==="role"?j.tag===v:j.source===v).length;
+  const cnt=(k,v)=>pool.filter(j=>matches(j,k)&&(k==="loc"?inLoc(j,v):k==="role"?j.tag===v:j.source===v)).length;
   $("s-views").innerHTML=sideItem("view","new","New",c.new)+sideItem("view","applied","Applied",c.applied)+sideItem("view","all","All Jobs",c.all);
   $("s-roles").innerHTML=[...new Set(DATA.jobs.map(j=>j.tag).filter(Boolean))].sort().map(r=>sideItem("role",r,r,cnt("role",r))).join("");
   $("s-locs").innerHTML=LOCS.filter(l=>l!=="Other"||cnt("loc",l)).map(l=>sideItem("loc",l,l,cnt("loc",l))).join("");
   $("s-boards").innerHTML=[...new Set(DATA.jobs.map(j=>j.source))].sort().map(b=>sideItem("board",b,BOARD[b]||b,cnt("board",b))).join("");
   $("s-other").setAttribute("aria-checked",S.other);
   $("s-foot").innerHTML=health();
+  $("s-clear").hidden=!filtering();
 }
 function renderList(){const rows=filtered(),ap=applied();
   $("l-title").textContent={new:"New",applied:"Applied",all:"All Jobs"}[S.view];
@@ -349,6 +363,7 @@ function renderPhone(){const rows=filtered(),ap=applied(),c=counts();
   const e=emptyCopy();
   $("m-list").innerHTML=h||`<div class="empty"><div><h2>${e[0]}</h2><p>${e[1]}</p></div></div>`;
   $("m-other").setAttribute("aria-checked",S.other);
+  $("m-clear").hidden=!filtering();
   $("m-foot").innerHTML=health();
 }
 function openSheet(id){S.sheet=id;$("sheet").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===id),true);$("sheetwrap").classList.add("open")}
@@ -380,6 +395,7 @@ document.addEventListener("click",e=>{
     S.view=tab.dataset.tab==="applied"?"applied":"new";render();window.scrollTo({top:0,behavior:"smooth"});return}
   if(e.target.closest("#fab")){const s=$("msearch");s.classList.toggle("show");if(s.classList.contains("show")){window.scrollTo({top:0,behavior:"smooth"});$("mq").focus()}return}
   if(e.target.closest("#s-other,#m-other")){S.other=!S.other;render();return}
+  if(e.target.closest(".clear")){S.role=S.loc=S.board=S.q="";$("q").value=$("mq").value="";S.sel=null;render();return}
   if(e.target.id==="scrim"||e.target.closest("[data-close]"))closeSheet();
 });
 for(const id of["q","mq"])$(id).addEventListener("input",e=>{S.q=e.target.value;$(id==="q"?"mq":"q").value=S.q;render()});
