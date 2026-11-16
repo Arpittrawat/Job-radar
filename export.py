@@ -59,7 +59,7 @@ def main():
                     if p.get("role") == "Founder" and p.get("linkedin"):
                         yc_founders.setdefault(_f.norm_company(re.sub(r"\s*\([A-Z]\d{2}\)$", "", j["company"])), []).append(
                             dict(name=p["name"], title=p.get("title", ""), linkedin=p["linkedin"]))
-            seen, uniq = set(), []
+            seen, uniq, seen_amt = set(), [], []
             for r in funding:  # drop repeats of the same company and generic headlines stored by older versions
                 r.pop("dedupe_key", None)
                 r["company"] = _f.clean_name(r["company"]) or r["company"]
@@ -67,14 +67,24 @@ def main():
                     names = json.loads(r.get("founders") or "[]")
                 except Exception:
                     names = []
-                r["founders"] = yc_founders.get(_f.norm_company(r["company"])) or [
-                    dict(name=n, title="Founder", linkedin="", search="https://www.linkedin.com/search/results/people/?"
-                         + urllib.parse.urlencode({"keywords": f"{n} {r['company']}"})) for n in names]
+                people = []
+                for n in names:
+                    p = dict(name=n, title="Founder", linkedin="") if isinstance(n, str) else dict(n)
+                    if not p.get("name"):
+                        continue
+                    if not p.get("linkedin"):
+                        p["search"] = "https://www.linkedin.com/search/results/people/?" + urllib.parse.urlencode({"keywords": f"{p['name']} {r['company']}"})
+                    people.append(p)
+                r["founders"] = yc_founders.get(_f.norm_company(r["company"])) or people
+                r.pop("enriched_at", None)
                 r["founders_search"] = "https://www.linkedin.com/search/results/people/?" + urllib.parse.urlencode({"keywords": f"{r['company']} founder"})
                 k = _f.norm_company(r["company"])
-                if k in seen or _f.GENERIC.search(r["company"]):
+                # same company written two ways (e.g. "Morgan" / "Morgan Health") with the same amount = same story
+                near = any((k.startswith(s) or s.startswith(k)) and min(len(k), len(s)) >= 4 and amt == (r["amount"] or "")
+                           for s, amt in seen_amt)
+                if k in seen or near or _f.GENERIC.search(r["company"]):
                     continue
-                seen.add(k); uniq.append(r)
+                seen.add(k); seen_amt.append((k, r["amount"] or "")); uniq.append(r)
             funding = uniq
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:

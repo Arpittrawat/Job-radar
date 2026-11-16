@@ -163,7 +163,7 @@ def article_info(article_url, company):
 
 def _site_from(page, company):
     key = re.sub(r"[^a-z0-9]", "", company.lower())[:12]
-    links = re.findall(r'href="(https?://[^"#?]+)', page)
+    links = re.findall(r"""href=["'](https?://[^"'#?]+)""", page)
     domains = []
     for l in links:
         d = urllib.parse.urlparse(l).netloc.lower().removeprefix("www.")
@@ -183,6 +183,8 @@ def init():
         cols = [r[1] for r in c.execute("PRAGMA table_info(funding)")]
         if "founders" not in cols:
             c.execute("ALTER TABLE funding ADD COLUMN founders TEXT")
+        if "enriched_at" not in cols:
+            c.execute("ALTER TABLE funding ADD COLUMN enriched_at TEXT")
 
 def norm_company(company):
     c = re.sub(r"\b(ai|labs?|inc|technologies|technology|tech|hq|app|io|co|ltd|pvt|private|limited)\b", " ", company.lower())
@@ -196,7 +198,7 @@ def store(item):
     """Insert if new. Same company+round within 30 days counts as a duplicate."""
     key = _key(item["company"], item["round"])
     with db.conn() as c:
-        row = c.execute("SELECT first_seen_at FROM funding WHERE dedupe_key=?", (key,)).fetchone()
+        row = c.execute("SELECT first_seen_at FROM funding WHERE dedupe_key=? OR (url=? AND url!='')", (key, item.get("url") or "")).fetchone()
         if row:
             return False
         c.execute("""INSERT INTO funding (dedupe_key,company,amount,amount_usd,round,region,headline,url,source,published_at,first_seen_at,website,founders)
@@ -206,10 +208,9 @@ def store(item):
                    json.dumps(item.get("founders") or [])))
         return True
 
-def run(max_age_days=7, website_lookups=25):
+def run(max_age_days=7):
     init()
     cutoff = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).isoformat(timespec="seconds")
-    lookups = 0
     for name, url, region_hint in FEEDS:
         tag = "f:" + name
         try:
@@ -232,11 +233,6 @@ def run(max_age_days=7, website_lookups=25):
                     if c.execute("SELECT 1 FROM funding WHERE dedupe_key=?", (_key(x["company"], x["round"]),)).fetchone():
                         continue
                 site, founders = None, find_founders(title + ". " + (it["summary"] or ""), x["company"])
-                if "news.google.com" not in url and lookups < website_lookups:
-                    lookups += 1
-                    site, more = article_info(it["link"], x["company"])
-                    founders = founders or more
-                    time.sleep(0.5)
                 region = "India" if (region_hint == "India" or x["india"]) else "Global"
                 added += store(dict(company=x["company"], amount=x["amount"], amount_usd=x["amount_usd"], round=x["round"],
                                     region=region, headline=title, url=it["link"], source=source,
@@ -247,3 +243,51 @@ def run(max_age_days=7, website_lookups=25):
             db.log_run(tag, False, error=f"{type(e).__name__}: {e}")
             print(f"[{tag}] FAILED: {e}")
         time.sleep(1)
+    enrich_pending()
+
+def _merge_founders(names, profiles):
+    """Profiles found on LinkedIn win; article names without a profile are kept as name-only entries."""
+    out = list(profiles)
+    have = {re.sub(r"[^a-z]", "", p["name"].lower()) for p in out}
+    for n in names:
+        n = n if isinstance(n, str) else n.get("name", "")
+        if n and re.sub(r"[^a-z]", "", n.lower()) not in have:
+            out.append(dict(name=n, title="Founder", linkedin=""))
+    return out[:4]
+
+def enrich_pending(limit=25, days=21):
+    """Deep pass, newest first: open the real article (also behind Google News links), read founders + website,
+    then search the web for whatever is still missing. Each story is processed once."""
+    import lookup
+    init()
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+    with db.conn() as c:
+        rows = [dict(r) for r in c.execute("""SELECT * FROM funding WHERE enriched_at IS NULL AND COALESCE(published_at, first_seen_at) >= ?
+                                              ORDER BY COALESCE(published_at, first_seen_at) DESC LIMIT ?""", (since, limit))]
+    done = 0
+    for r in rows:
+        try:
+            company, url, site = r["company"], r["url"] or "", r["website"]
+            try:
+                names = json.loads(r.get("founders") or "[]")
+            except Exception:
+                names = []
+            if "news.google.com" in url:
+                url = lookup.resolve_gnews(url) or url
+            if url and "news.google.com" not in url:
+                s2, more = article_info(url, company)
+                site = site or s2
+                names = names or more
+            profiles = [n for n in names if isinstance(n, dict) and n.get("linkedin")]
+            if not profiles:
+                profiles = lookup.find_founders(company)
+            if not site:
+                site = lookup.find_website(company)
+            founders = _merge_founders([n for n in names if not (isinstance(n, dict) and n.get("linkedin"))], profiles)
+            with db.conn() as c:
+                c.execute("UPDATE funding SET url=?, website=?, founders=?, enriched_at=? WHERE id=?",
+                          (url, site, json.dumps(founders), datetime.now(timezone.utc).isoformat(timespec="seconds"), r["id"]))
+            done += 1
+        except Exception as e:
+            print(f"[funding details] {r['company']}: {type(e).__name__}: {e}")
+    print(f"[funding details] {done} stories checked for founders + website")
