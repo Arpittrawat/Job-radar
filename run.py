@@ -55,6 +55,11 @@ if __name__ == "__main__":
     first_ever = before == 0
     for s in SOURCES:
         run_source(s)
+    try:
+        import funding
+        funding.run()
+    except Exception as e:
+        print(f"[funding] FAILED: {e}")
     n = count_new_matches(before)
     print(f"{n} new matching jobs this run")
     if not first_ever:                 # no notification for the very first baseline run
