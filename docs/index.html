@@ -115,11 +115,15 @@ button{background:none;border:0;cursor:pointer}
 .btn:active{transform:scale(.95)}
 .btn.primary{background:var(--blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px color-mix(in srgb,var(--blue) 32%,transparent)}
 .btn.primary:hover{filter:brightness(1.07)}
+.btn.glass{color:var(--ink)}
 .btn.done{color:var(--green)}
 .facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
 .fact{background:var(--tile);border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px var(--sh)}
 .fact small{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
 .fact span{font-size:14px;font-weight:500}
+.headline{margin-top:16px;font-size:15px;line-height:1.45;color:var(--mute);font-style:italic;max-width:62ch}
+.amt{color:var(--ink);font-weight:700}
+[hidden]{display:none!important}
 .note{margin-top:16px;font-size:13px;color:var(--mute)}
 .kbd{margin-top:26px;font-size:12px;color:var(--mute)}
 .kbd kbd{font:inherit;border:1px solid var(--sep);background:var(--tile);border-radius:6px;padding:1px 6px;margin:0 2px}
@@ -208,10 +212,13 @@ button{background:none;border:0;cursor:pointer}
     <div class="brand">Job Radar</div>
     <button class="clear" id="s-clear" hidden>Clear filters</button>
     <div id="s-views"></div>
+    <div id="s-jobf">
     <div class="sh">Role</div><div id="s-roles"></div>
     <div class="sh">Location</div><div id="s-locs"></div>
     <div class="sh">Board</div><div id="s-boards"></div>
     <button class="sw" role="switch" aria-checked="false" id="s-other"><span>Show other titles</span><span class="switch"></span></button>
+    </div>
+    <div id="s-fundf" hidden><div class="sh">Region</div><div id="s-fregion"></div><div class="sh">Round</div><div id="s-fround"></div></div>
     <div class="side-foot" id="s-foot"></div>
   </nav>
   <section class="list" aria-label="Jobs">
@@ -232,7 +239,7 @@ button{background:none;border:0;cursor:pointer}
   <h1>Job Radar</h1><p class="sub" id="m-sub"></p>
   <label class="msearch glass" id="msearch"><svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     <span class="sr">Search</span><input id="mq" type="search" placeholder="Search role or company" autocomplete="off"></label>
-  <div class="seg glass" role="group" aria-label="View"><span class="thumb" id="thumb"></span>
+  <div class="seg glass" id="seg" role="group" aria-label="View"><span class="thumb" id="thumb"></span>
     <button data-v="new">New</button><button data-v="applied">Applied</button><button data-v="all">All</button></div>
   <div class="chips" id="m-roles" aria-label="Role"></div>
   <div class="chips" id="m-locs" aria-label="Location"></div>
@@ -255,8 +262,8 @@ button{background:none;border:0;cursor:pointer}
 const $=id=>document.getElementById(id);
 const BOARD={hn:"Hacker News",yc:"YC",a16z:"a16z",trueup:"Lenny's Jobs"};
 const LOCS=["India","US","Remote","Other"];
-const S={view:"new",role:"",loc:"",board:"",q:"",other:false,sel:null,sheet:null};
-let DATA={jobs:[],health:[]},lastVisit=null,mem={};
+const S={view:"new",role:"",loc:"",board:"",q:"",other:false,sel:null,sheet:null,fregion:"",fround:"",fsel:null};
+let DATA={jobs:[],health:[],funding:[],funding_health:[]},lastVisit=null,mem={};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
   set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const applied=()=>store.get("radar_applied",{});
@@ -273,7 +280,56 @@ const clock=iso=>iso?new Date(iso).toLocaleString(undefined,{weekday:"short",hou
 const hot=j=>{const h=hrs(when(j));return h!=null&&h<12};
 const isNew=(j,ap)=>j.status==="new"&&!ap[j.id];
 const fresh=(j,ap)=>lastVisit&&j.first_seen_at>lastVisit&&!ap[j.id];
-const filtering=()=>S.q||S.role||S.loc||S.board;
+const isF=()=>S.view==="funding";
+const filtering=()=>isF()?(S.q||S.fregion||S.fround):(S.q||S.role||S.loc||S.board);
+
+/* ---------- funding ---------- */
+const fwhen=f=>f.published_at||f.first_seen_at;
+const roundGroup=r=>{if(!r)return"Other";const x=r.toLowerCase();if(x.includes("pre-seed")||x==="angel")return"Pre-Seed";if(x==="seed")return"Seed";
+  if(x.includes("pre-series"))return"Pre-Series A";const m=x.match(/series ([a-h])/);if(m)return m[1]==="a"?"Series A":m[1]==="b"?"Series B":"Series C+";return"Other"};
+const ROUNDS=["Pre-Seed","Seed","Pre-Series A","Series A","Series B","Series C+","Other"];
+function fmatch(f,skip){const q=S.q.toLowerCase();
+  return (skip==="fregion"||!S.fregion||f.region===S.fregion)&&(skip==="fround"||!S.fround||roundGroup(f.round)===S.fround)
+    &&(!q||(f.company||"").toLowerCase().includes(q)||(f.headline||"").toLowerCase().includes(q))}
+function frows(){return(DATA.funding||[]).filter(f=>fmatch(f)).sort((a,b)=>String(fwhen(b)).localeCompare(String(fwhen(a))))}
+const fhot=f=>{const h=hrs(fwhen(f));return h!=null&&h<24};
+const fsite=f=>f.website||("https://www.google.com/search?q="+encodeURIComponent(f.company+" official website"));
+function fstatus(){const n=(DATA.funding||[]).filter(f=>hrs(fwhen(f))<168).length;
+  return DATA.generated_at?`${n} funding ${n===1?"story":"stories"} this week. Updated ${long(DATA.generated_at).toLowerCase()}`:"Waiting for the first scan"}
+function fhealth(){const h=DATA.funding_health||[];return h.length?"Sources: "+h.map(s=>s.ok?esc(s.source):`<span class="bad">${esc(s.source)} failed</span>`).join(", "):""}
+function fdetailHTML(f,sheet){
+  if(!f)return sheet?"":`<div class="empty" style="height:70vh"><div><h2>No Story Selected</h2><p>Choose a funding story to see the details.</p></div></div>`;
+  return`<div class="detail-inner">${sheet?'<div class="grab"></div><button class="done-btn" data-close>Done</button>':""}
+    <div class="${sheet?"":"hero"}">
+      <div class="d-co">Funding news from ${esc(f.source||"the web")}</div>
+      <h2 class="d-title">${esc(f.company)}</h2>
+      <div class="d-sub">Raised ${f.amount?`<b class="amt">${esc(f.amount)}</b>`:"funding"}${f.round?" in a "+esc(f.round)+" round":""}. Reported <span class="${fhot(f)?"hot":""}">${long(fwhen(f)).toLowerCase()}</span>.</div>
+      <p class="headline">“${esc(f.headline)}”</p>
+      <div class="actions"><a class="btn primary" href="${esc(f.url)}" target="_blank" rel="noopener">Read News</a>
+        <a class="btn glass" href="${esc(fsite(f))}" target="_blank" rel="noopener">${f.website?"Company Website":"Find Website"}</a></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><small>Amount</small><span>${esc(f.amount||"Not stated")}</span></div>
+      <div class="fact"><small>Round</small><span>${esc(f.round||"Not stated")}</span></div>
+      <div class="fact"><small>Region</small><span>${esc(f.region||"Global")}</span></div>
+      <div class="fact"><small>Website</small><span>${f.website?esc(f.website.replace(/^https?:\/\//,"")):"Not found yet"}</span></div></div>
+    ${sheet?"":'<p class="kbd"><kbd>↑</kbd><kbd>↓</kbd> move &nbsp; <kbd>↵</kbd> read news &nbsp; <kbd>W</kbd> company website &nbsp; <kbd>/</kbd> search</p>'}</div>`}
+function renderFundList(){const rows=frows();
+  $("l-title").textContent="Funding";$("l-sub").textContent=fstatus();
+  if(!rows.find(f=>f.id===S.fsel))S.fsel=rows[0]?.id??null;
+  let h="",g=null;
+  for(const f of rows){const d=dayOf(fwhen(f));if(d!==g){g=d;h+=`<div class="day">${d}</div>`}
+    h+=`<button class="row" role="option" data-fid="${f.id}" aria-selected="${f.id===S.fsel}">
+      <div class="r1"><b>${esc(f.company)}</b><span class="age ${fhot(f)?"hot":""}">${short(fwhen(f))}</span></div>
+      <div class="r2">${esc([f.amount,f.round].filter(Boolean).join(" ")||"Funding round")}</div>
+      <div class="r3">${esc(f.source||"")} — ${esc(f.region||"Global")}</div></button>`}
+  $("rows").innerHTML=h||`<div class="empty"><div><h2>${filtering()?"No Results":"No Funding News Yet"}</h2><p>${filtering()?"Try another search or clear a filter.":"Stories appear after the next scan."}</p></div></div>`;
+}
+function renderFundSide(){const pool=DATA.funding||[];
+  const cnt=(k,v)=>pool.filter(f=>fmatch(f,k)&&(k==="fregion"?f.region===v:roundGroup(f.round)===v)).length;
+  $("s-fregion").innerHTML=["India","Global"].map(r=>sideItem("fregion",r,r,cnt("fregion",r))).join("");
+  $("s-fround").innerHTML=ROUNDS.filter(r=>r!=="Other"||cnt("fround",r)).map(r=>sideItem("fround",r,r,cnt("fround",r))).join("");
+}
 
 function base(ap){return DATA.jobs.filter(j=>S.view==="applied"?ap[j.id]:S.view==="new"?isNew(j,ap):true)
   .filter(j=>S.other||j.tag||S.view==="applied")}
@@ -299,15 +355,17 @@ function sideItem(group,val,label,count){const on=S[group]===val;
   return`<button class="si ${count===0&&!on?"zero":""}" data-g="${group}" data-v="${esc(val)}" aria-pressed="${on}">${esc(label)}<span class="ct">${on&&group!=="view"?"✕":count??""}</span></button>`}
 function renderSide(){const c=counts(),pool=base(applied());
   const cnt=(k,v)=>pool.filter(j=>matches(j,k)&&(k==="loc"?inLoc(j,v):k==="role"?j.tag===v:j.source===v)).length;
-  $("s-views").innerHTML=sideItem("view","new","New",c.new)+sideItem("view","applied","Applied",c.applied)+sideItem("view","all","All Jobs",c.all);
+  $("s-views").innerHTML=sideItem("view","new","New",c.new)+sideItem("view","applied","Applied",c.applied)+sideItem("view","all","All Jobs",c.all)
+    +sideItem("view","funding","Funding",(DATA.funding||[]).filter(f=>fmatch(f)).length);
+  $("s-jobf").hidden=isF();$("s-fundf").hidden=!isF();if(isF())renderFundSide();
   $("s-roles").innerHTML=[...new Set(DATA.jobs.map(j=>j.tag).filter(Boolean))].sort().map(r=>sideItem("role",r,r,cnt("role",r))).join("");
   $("s-locs").innerHTML=LOCS.filter(l=>l!=="Other"||cnt("loc",l)).map(l=>sideItem("loc",l,l,cnt("loc",l))).join("");
   $("s-boards").innerHTML=[...new Set(DATA.jobs.map(j=>j.source))].sort().map(b=>sideItem("board",b,BOARD[b]||b,cnt("board",b))).join("");
   $("s-other").setAttribute("aria-checked",S.other);
-  $("s-foot").innerHTML=health();
+  $("s-foot").innerHTML=isF()?fhealth():health();
   $("s-clear").hidden=!filtering();
 }
-function renderList(){const rows=filtered(),ap=applied();
+function renderList(){if(isF())return renderFundList();const rows=filtered(),ap=applied();
   $("l-title").textContent={new:"New",applied:"Applied",all:"All Jobs"}[S.view];
   $("l-sub").textContent=statusLine();
   if(!rows.find(j=>j.id===S.sel))S.sel=rows[0]?.id??null;
@@ -340,10 +398,14 @@ function detailHTML(j,sheet){
       <div class="fact"><small>First seen</small><span>${clock(j.first_seen_at)}</span></div></div>
     ${j.possible_dupe_of?'<p class="note">This role is also listed on another board.</p>':""}
     ${sheet?"":'<p class="kbd"><kbd>↑</kbd><kbd>↓</kbd> move &nbsp; <kbd>↵</kbd> open job &nbsp; <kbd>A</kbd> mark as applied &nbsp; <kbd>/</kbd> search</p>'}</div>`}
-function renderDetail(){$("detail").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===S.sel),false)}
+function renderDetail(){$("detail").innerHTML=isF()?fdetailHTML((DATA.funding||[]).find(f=>f.id===S.fsel),false):detailHTML(DATA.jobs.find(j=>j.id===S.sel),false)}
 
 /* ---------- phone ---------- */
-function renderPhone(){const rows=filtered(),ap=applied(),c=counts();
+function renderPhone(){
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-pressed",t.dataset.tab===(isF()?"funding":S.view==="applied"?"applied":"radar")));
+  $("seg").hidden=isF();$("m-other").hidden=isF();$("mq").placeholder=isF()?"Search company":"Search role or company";
+  if(isF())return renderFundPhone();
+  const rows=filtered(),ap=applied(),c=counts();
   $("m-sub").textContent=statusLine();
   $("thumb").style.transform=`translateX(${["new","applied","all"].indexOf(S.view)*100}%)`;
   document.querySelectorAll(".seg button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.v===S.view);
@@ -366,6 +428,21 @@ function renderPhone(){const rows=filtered(),ap=applied(),c=counts();
   $("m-clear").hidden=!filtering();
   $("m-foot").innerHTML=health();
 }
+function renderFundPhone(){const rows=frows();
+  $("m-sub").textContent=fstatus();
+  const chip=(g,v,l)=>`<button class="chip ${S[g]===v?"":"glass"}" data-g="${g}" data-v="${esc(v)}" aria-pressed="${S[g]===v}">${esc(l)}</button>`;
+  $("m-roles").innerHTML=chip("fregion","","Everywhere")+chip("fregion","India","India")+chip("fregion","Global","Global");
+  $("m-locs").innerHTML=chip("fround","","All Rounds")+ROUNDS.filter(r=>r!=="Other").map(r=>chip("fround",r,r)).join("");
+  let h="",g=null,open=false;
+  for(const f of rows){const d=dayOf(fwhen(f));if(d!==g){if(open)h+="</div>";g=d;h+=`<div class="gh">${d}</div><div class="grp">`;open=true}
+    h+=`<button class="mrow" data-fopen="${f.id}"><span class="mdot"></span>
+      <span class="mtx"><span class="mt">${esc(f.company)}</span><span class="ms">${esc([f.amount,f.round].filter(Boolean).join(" "))}${f.source?", "+esc(f.source):""}</span></span>
+      <span class="mage ${fhot(f)?"hot":""}">${short(fwhen(f))}</span><span class="chev">›</span></button>`}
+  if(open)h+="</div>";
+  $("m-list").innerHTML=h||`<div class="empty"><div><h2>${filtering()?"No Results":"No Funding News Yet"}</h2><p>${filtering()?"Try another search or clear a filter.":"Stories appear after the next scan."}</p></div></div>`;
+  $("m-clear").hidden=!filtering();$("m-foot").innerHTML=fhealth();
+}
+function openFSheet(id){S.sheet="f"+id;$("sheet").innerHTML=fdetailHTML((DATA.funding||[]).find(f=>f.id===id),true);$("sheetwrap").classList.add("open")}
 function openSheet(id){S.sheet=id;$("sheet").innerHTML=detailHTML(DATA.jobs.find(j=>j.id===id),true);$("sheetwrap").classList.add("open")}
 function closeSheet(){$("sheetwrap").classList.remove("open");S.sheet=null}
 let tt;function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
@@ -386,16 +463,16 @@ function toggleApplied(id){const ap=applied();id=String(id);
 document.addEventListener("click",e=>{
   const si=e.target.closest(".si,.chip");
   if(si){const g=si.dataset.g,v=si.dataset.v;S[g]=g==="view"?v:(S[g]===v&&v!==""?"":v);S.sel=null;render();return}
-  const r=e.target.closest(".row");if(r){S.sel=Number(r.dataset.id);renderList();renderDetail();return}
+  const r=e.target.closest(".row");if(r){if(r.dataset.fid)S.fsel=Number(r.dataset.fid);else S.sel=Number(r.dataset.id);renderList();renderDetail();return}
+  const fo=e.target.closest("[data-fopen]");if(fo){openFSheet(Number(fo.dataset.fopen));return}
   const ap=e.target.closest("[data-apply]");if(ap){toggleApplied(ap.dataset.apply);return}
   const mo=e.target.closest("[data-open]");if(mo){openSheet(Number(mo.dataset.open));return}
   const seg=e.target.closest(".seg button");if(seg){S.view=seg.dataset.v;render();return}
   const tab=e.target.closest(".tab");if(tab){
-    if(tab.dataset.tab==="funding"){toast("Funding radar is coming soon");return}
-    S.view=tab.dataset.tab==="applied"?"applied":"new";render();window.scrollTo({top:0,behavior:"smooth"});return}
+    S.view=tab.dataset.tab==="funding"?"funding":tab.dataset.tab==="applied"?"applied":"new";render();window.scrollTo({top:0,behavior:"smooth"});return}
   if(e.target.closest("#fab")){const s=$("msearch");s.classList.toggle("show");if(s.classList.contains("show")){window.scrollTo({top:0,behavior:"smooth"});$("mq").focus()}return}
   if(e.target.closest("#s-other,#m-other")){S.other=!S.other;render();return}
-  if(e.target.closest(".clear")){S.role=S.loc=S.board=S.q="";$("q").value=$("mq").value="";S.sel=null;render();return}
+  if(e.target.closest(".clear")){S.role=S.loc=S.board=S.q=S.fregion=S.fround="";$("q").value=$("mq").value="";S.sel=null;render();return}
   if(e.target.id==="scrim"||e.target.closest("[data-close]"))closeSheet();
 });
 for(const id of["q","mq"])$(id).addEventListener("input",e=>{S.q=e.target.value;$(id==="q"?"mq":"q").value=S.q;render()});
@@ -403,6 +480,13 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&S.sheet){closeSheet();return}
   if(matchMedia("(max-width:899px)").matches)return;
   if(e.target.tagName==="INPUT"){if(e.key==="Escape"||e.key==="Enter")e.target.blur();return}
+  if(isF()){const ids=frows().map(f=>f.id),i=ids.indexOf(S.fsel),f=(DATA.funding||[]).find(x=>x.id===S.fsel);
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.fsel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
+      renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
+    else if(e.key==="Enter"&&f)window.open(f.url,"_blank","noopener");
+    else if((e.key==="w"||e.key==="W")&&f&&!e.metaKey&&!e.ctrlKey)window.open(fsite(f),"_blank","noopener");
+    else if(e.key==="/"){e.preventDefault();$("q").focus()}
+    return}
   const ids=filtered().map(j=>j.id),i=ids.indexOf(S.sel);
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.sel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
     renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
