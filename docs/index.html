@@ -126,7 +126,7 @@ button{background:none;border:0;cursor:pointer}
 .btn.primary:hover{filter:brightness(1.07)}
 .btn.glass{color:var(--ink)}
 .btn.done{color:var(--green)}
-.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
 .fact{background:var(--tile);border-radius:16px;padding:13px 16px;box-shadow:0 1px 2px var(--sh)}
 .fact small{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
 .fact span{font-size:14px;font-weight:500}
@@ -173,6 +173,8 @@ button{background:none;border:0;cursor:pointer}
 .fh{font-size:13px;font-weight:600;color:var(--mute);margin-bottom:4px}
 .frow{display:flex;align-items:center;gap:12px;padding:8px 0}
 .frow+.frow{border-top:1px solid var(--sep)}
+.fnames{margin-top:12px;font-size:15px;font-weight:500}
+.fnames span{display:block;font-size:12px;font-weight:600;color:var(--mute);margin-bottom:2px}
 .headline{margin-top:14px;font-size:15px;line-height:1.45;color:var(--mute);max-width:62ch}
 .amt{color:var(--ink);font-weight:700}
 [hidden]{display:none!important}
@@ -350,10 +352,6 @@ const fsite=f=>f.website||("https://www.google.com/search?q="+encodeURIComponent
 function fstatus(){const n=(DATA.funding||[]).filter(f=>hrs(fwhen(f))<168).length;
   return DATA.generated_at?`${n} funding ${n===1?"story":"stories"} this week. Updated ${long(DATA.generated_at).toLowerCase()}`:"Waiting for the first scan"}
 function fhealth(){const h=DATA.funding_health||[];return h.length?"Sources: "+h.map(s=>s.ok?esc(s.source):`<span class="bad">${esc(s.source)} failed</span>`).join(", "):""}
-function fFounders(f){const fs=f.founders||[];
-  const rows=fs.map(p=>`<div class="frow"><span class="av av-f">${esc(initials(p.name))}</span><div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="ptitle">${esc(p.title||"Founder")}</div></div>
-    <a class="pill-btn" href="${esc(p.linkedin||p.search)}" target="_blank" rel="noopener">${LI}<span>${p.linkedin?"Profile":"Find"}</span></a></div>`).join("");
-  return rows?`<div class="founders"><div class="fh">Founders</div>${rows}</div>`:""}
 function fdetailHTML(f,sheet){
   if(!f)return sheet?"":`<div class="empty" style="height:70vh"><div><h2>No Story Selected</h2><p>Choose a funding story to see the details.</p></div></div>`;
   return`<div class="detail-inner">${sheet?'<div class="grab"></div><button class="done-btn" data-close>Done</button>':""}
@@ -361,16 +359,16 @@ function fdetailHTML(f,sheet){
       <div class="d-co">Funding news from ${esc(f.source||"the web")}</div>
       <h2 class="d-title">${esc(f.company)}</h2>
       <div class="d-sub">Raised ${f.amount?`<b class="amt">${esc(f.amount)}</b>`:"funding"}${f.round?" in a "+esc(f.round)+" round":""}. Reported <span class="${fhot(f)?"hot":""}">${long(fwhen(f)).toLowerCase()}</span>.</div>
-      ${fFounders(f)}
+      ${(f.founders||[]).length?`<p class="fnames"><span>Founders</span>${f.founders.map(esc).join(", ")}</p>`:""}
       <p class="headline">${esc(f.headline)}</p>
       <div class="actions"><a class="btn primary" href="${esc(f.url)}" target="_blank" rel="noopener">Read News</a>
-        <a class="btn glass" href="${esc(fsite(f))}" target="_blank" rel="noopener">${f.website?"Company Website":"Find Website"}</a></div>
+</div>
     </div>
     <div class="facts">
       <div class="fact"><small>Amount</small><span>${esc(f.amount||"Not stated")}</span></div>
       <div class="fact"><small>Round</small><span>${esc(f.round||"Not stated")}</span></div>
       <div class="fact"><small>Region</small><span>${esc(f.region||"Global")}</span></div>
-      <div class="fact"><small>Website</small><span>${f.website?esc(f.website.replace(/^https?:\/\//,"")):"Not found yet"}</span></div></div></div>`}
+</div></div>`}
 function renderFundList(){const rows=frows();
   $("l-title").textContent="Funding";$("l-sub").textContent=fstatus();
   if(!rows.find(f=>f.id===S.fsel))S.fsel=rows[0]?.id??null;
@@ -451,7 +449,10 @@ function detailHTML(j,sheet){
       <h2 class="d-title">${esc(j.title)}</h2>
       <div class="d-sub">${esc(j.location||"Location not listed")}. Posted <span class="${hot(j)?"hot":""}">${long(when(j)).toLowerCase()}</span>.</div>
       <div class="actions"><a class="btn primary" href="${esc(j.url)}" target="_blank" rel="noopener">Open Job</a>
-        <button class="btn glass ${done?"done":""}" data-apply="${j.id}">${done?"✓ Applied":"Mark as Applied"}</button></div>
+        <button class="btn glass ${done?"done":""}" data-apply="${j.id}">${done?"✓ Applied":"Mark as Applied"}</button>
+        <button class="btn glass" data-tailor="${j.id}">Tailor CV</button>
+        <button class="btn glass" data-compose="${j.id}">Write Email</button></div>
+      ${typeof emailedNote==="function"?emailedNote(j):""}
     </div>
     <div class="facts">
       <div class="fact"><small>Role type</small><span>${esc(j.tag||"Other")}</span></div>
@@ -466,10 +467,10 @@ const LI='<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" 
 function jobExtras(j){const d=j.d;
   if(!d)return`<p class="note">People and the job description appear after the next scan.</p>`;
   if(d.error&&!d.people?.length)return`<p class="note">Couldn't read this job page (${esc(d.error)}). Use Open Job instead.</p>`;
-  const people=(d.people||[]).map(p=>{
+  const people=(d.people||[]).map((p,i)=>{
     const link=p.linkedin?`<a class="pill-btn" href="${esc(p.linkedin)}" target="_blank" rel="noopener" aria-label="LinkedIn">${LI}<span>Profile</span></a>`
       :p.search?`<a class="pill-btn" href="${esc(p.search)}" target="_blank" rel="noopener">${LI}<span>Find</span></a>`:"";
-    const mail=p.email?`<a class="pill-btn blue" href="mailto:${esc(p.email)}">Email</a>`:"";
+    const mail=`<button class="pill-btn blue" data-compose="${j.id}" data-person="${i}">Write</button>`;
     return`<div class="prow"><span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${p.email&&!p.linkedin&&p.role==="From the post"?"@":esc(initials(p.name))}</span>
       <div class="pinfo"><div class="pname">${esc(p.name)} <span class="role">${esc(p.role)}</span></div><div class="ptitle">${esc(p.title||"")}</div>
         <div class="meters">${meter("Worth emailing",p.need)}${meter("Email findable",p.exists)}</div></div>
@@ -571,6 +572,7 @@ document.addEventListener("click",e=>{
 });
 for(const id of["q","mq"])$(id).addEventListener("input",e=>{S.q=e.target.value;$(id==="q"?"mq":"q").value=S.q;render()});
 document.addEventListener("keydown",e=>{
+  if(document.body.classList.contains("studio-open")||e.target.isContentEditable||e.target.tagName==="TEXTAREA")return;
   if(e.key==="Escape"&&S.sheet){closeSheet();return}
   if(matchMedia("(max-width:899px)").matches)return;
   if(e.target.tagName==="INPUT"){if(e.key==="Escape"||e.key==="Enter")e.target.blur();return}
@@ -578,7 +580,6 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.fsel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
       renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
     else if(e.key==="Enter"&&f)window.open(f.url,"_blank","noopener");
-    else if((e.key==="w"||e.key==="W")&&f&&!e.metaKey&&!e.ctrlKey)window.open(fsite(f),"_blank","noopener");
     else if(e.key==="/"){e.preventDefault();$("q").focus()}
     return}
   const ids=filtered().map(j=>j.id),i=ids.indexOf(S.sel);
@@ -598,4 +599,389 @@ async function load(){
   store.set("radar_last_visit",DATA.generated_at||new Date().toISOString());
 }
 load();
-</script></body></html>
+</script>
+<style>
+/* ---------- studio: CV Tailor + Cold Email ---------- */
+.studio{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;background:color-mix(in srgb,var(--base) 45%,transparent);
+  backdrop-filter:blur(26px) saturate(1.3);-webkit-backdrop-filter:blur(26px) saturate(1.3)}
+body.studio-open{overflow:hidden}
+body.studio-open .studio{display:flex;animation:fadein .3s var(--spring)}
+.st-bar{display:flex;align-items:center;gap:14px;margin:14px 14px 0;padding:10px 12px 10px 20px;border-radius:24px;flex-wrap:wrap}
+.st-t{flex:1;min-width:180px}
+.st-t b{display:block;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-t span{font-size:12px;color:var(--mute)}
+.st-stats{display:flex;gap:18px;align-items:center}
+.stat{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);line-height:1.2}
+.stat b{display:block;font-size:15px;color:var(--ink);font-weight:600}
+.ring{width:38px;height:38px;flex:none}
+.ring circle{fill:none;stroke-width:4}
+.ring .bg{stroke:var(--fill)}.ring .fg{stroke:var(--blue);stroke-linecap:round;transition:stroke-dashoffset .5s var(--spring)}
+.st-act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.st-act .btn{height:36px;padding:0 16px;font-size:13px}
+.x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--fill);font-size:15px;color:var(--mute)}
+.x:hover{background:var(--on);color:var(--ink)}
+.st-body{flex:1;min-height:0;display:grid;grid-template-columns:290px minmax(0,1fr) 310px;gap:12px;padding:12px 14px 14px}
+.st-col{overflow-y:auto;min-height:0;border-radius:24px;padding:18px 16px}
+.st-mid{overflow-y:auto;min-height:0;padding:2px 4px 60px}
+.st-h{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 8px 2px}
+.st-h+*{margin-bottom:22px}
+.req{display:flex;gap:10px;padding:9px 2px;font-size:13px;line-height:1.4;border-top:1px solid var(--sep)}
+.req:first-child{border-top:0}
+.ri{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:1px}
+.ri.ok{background:var(--green);color:#000}.ri.part{background:var(--fill);color:var(--ink)}.ri.gap{box-shadow:inset 0 0 0 1.5px var(--red);color:var(--red)}
+.req small{display:block;color:var(--mute);font-size:11px;margin-top:2px}
+.kws{display:flex;flex-wrap:wrap;gap:6px}
+.kw{font-size:12px;font-weight:500;padding:4px 10px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--sep);color:var(--mute)}
+.kw.on{background:color-mix(in srgb,var(--blue) 22%,transparent);box-shadow:none;color:var(--ink)}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden;margin:6px 0 8px}
+.bar i{display:block;height:100%;background:var(--ink);opacity:.75;border-radius:3px;transition:width .4s var(--spring)}
+.flag{font-size:12px;color:var(--mute);line-height:1.5}
+.flag b{color:var(--ink);font-weight:600}
+.jd{width:100%;min-height:180px;border-radius:14px;border:1px solid var(--sep);background:var(--fill);padding:10px 12px;font-family:inherit;font-size:13px;line-height:1.45;resize:vertical;color:var(--ink)}
+.sug{padding:13px 14px;border-radius:16px;background:var(--tile);margin-bottom:8px;font-size:13px;line-height:1.45}
+.sug b{display:block;font-size:12px;font-weight:600;color:var(--mute);margin-bottom:3px}
+.sug q{quotes:none;color:var(--ink);font-style:italic}
+.sug .pill-btn{margin-top:8px}
+.muted{font-size:12px;color:var(--mute);line-height:1.5}
+/* paper */
+.paper{background:#fff;color:#1d1d1f;max-width:800px;margin:0 auto;border-radius:8px;padding:46px 54px 54px;box-shadow:0 24px 70px rgba(0,0,0,.5);
+  font:13px/1.48 -apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:0}
+.paper [contenteditable]{outline:none;border-radius:4px;transition:background .15s}
+.paper [contenteditable]:hover{background:rgba(0,122,255,.05)}
+.paper [contenteditable]:focus{background:rgba(0,122,255,.09)}
+.p-name{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.p-ct{color:#555;font-size:12px;margin:2px 0 6px}
+.p-sec{margin-top:16px}
+.p-st{font-size:12px;font-weight:700;letter-spacing:.03em;border-bottom:1px solid #c7c7cc;padding-bottom:3px;margin-bottom:6px}
+.p-h{font-weight:600;margin-top:8px}
+.p-p{margin:2px 0}
+.p-b{display:flex;gap:8px;align-items:flex-start;margin:3px 0}
+.p-b::before{content:"•";flex:none;width:10px}
+.p-b>div{flex:1}
+.xyz{flex:none;display:flex;gap:3px;margin-top:6px}
+.xyz i{width:6px;height:6px;border-radius:50%;background:#d1d1d6}
+.xyz i.on{background:#0a7cff}
+.p-hint{font-size:11px;color:#8e8e93;margin:0 0 4px 18px}
+.paper mark{background:rgba(0,122,255,.14);color:inherit;border-radius:3px;padding:0 1px}
+.addb{font-size:11px;color:#0a7cff;margin:2px 0 0 18px;opacity:0;transition:opacity .2s}
+.p-sec:hover .addb,.addb:focus{opacity:1}
+.p-empty h2{font-size:20px;margin-bottom:6px}.p-empty p{color:#555;margin-bottom:14px}
+.p-empty textarea{width:100%;min-height:320px;border:1px solid #d1d1d6;border-radius:10px;padding:12px;font:12.5px/1.5 ui-monospace,Menlo,monospace;color:#1d1d1f;background:#fafafa}
+.p-empty .btn{margin-top:12px}
+.rawcv{width:100%;min-height:70vh;border:0;outline:none;font:12.5px/1.6 ui-monospace,Menlo,monospace;color:#1d1d1f;background:none;resize:none}
+/* email */
+.mail{max-width:640px;margin:0 auto;border-radius:24px;padding:22px 24px 26px}
+.mrow2{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sep);padding:8px 0;font-size:14px}
+.mrow2 label{width:62px;color:var(--mute);font-size:13px;flex:none}
+.mrow2 input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:14px}
+.blk{margin-top:16px}
+.blk label{display:block;font-size:11px;font-weight:600;color:var(--mute);margin:0 0 4px 2px}
+.blk textarea{width:100%;border:0;outline:none;resize:none;overflow:hidden;background:var(--fill);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:15px;line-height:1.5;color:var(--ink);min-height:44px}
+.blk textarea:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 55%,transparent)}
+.who{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 8px;border-radius:12px;font-size:13px}
+.who:hover{background:var(--fill)}
+.who[aria-pressed=true]{background:var(--on)}
+.who .av{width:30px;height:30px;font-size:12px}
+.who small{display:block;color:var(--mute);font-size:11px}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{font-size:12px;font-weight:500;padding:6px 11px;border-radius:14px;background:var(--fill);text-align:left}
+.fchip:hover{background:var(--on)}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:13px;line-height:1.4;border-top:1px solid var(--sep)}
+.chk:first-child{border-top:0}
+.chk .ri{margin-top:0}
+.fu{margin-top:14px;font-size:13px;color:var(--mute)}
+.fu b{color:var(--ink)}
+.fu button{color:var(--blue);font-weight:600;margin-left:6px;font-size:13px}
+@media (max-width:1100px){.st-body{grid-template-columns:250px minmax(0,1fr)}.st-r{grid-column:1/-1}}
+@media (max-width:899px){
+  .st-body{display:flex;flex-direction:column;overflow-y:auto;padding:12px 10px 40px}
+  .st-mid{overflow:visible;padding:0;order:-1;flex:none}
+  .st-bar{position:relative;padding-right:56px!important}
+  .glass.st-bar>.st-act{position:static}
+  .st-bar .x{position:absolute;top:10px;right:10px;z-index:2}
+  .st-col{flex:none}
+  .st-col{overflow:visible;margin-top:12px}
+  .st-bar{margin:calc(env(safe-area-inset-top) + 8px) 10px 0;padding:10px 12px}
+  .st-stats{order:3;width:100%;justify-content:space-between}
+  .paper{padding:26px 20px 30px;font-size:13px}
+  .mail{padding:16px 16px 20px}
+}
+</style>
+<div class="studio" id="studio" role="dialog" aria-modal="true" aria-label="Studio"></div>
+<script>
+/* ---------- CV Tailor + Cold Email ---------- */
+const DEFAULT_CV=null; // filled once Arpit shares his CV
+const KW=["SEO","SEM","content marketing","copywriting","email marketing","lifecycle","CRM","HubSpot","Salesforce","Google Analytics","GA4","Mixpanel","Amplitude",
+ "SQL","Excel","Google Sheets","Python","JavaScript","APIs","A/B testing","experimentation","paid ads","performance marketing","Meta Ads","Google Ads","LinkedIn",
+ "social media","growth","funnel","conversion","retention","activation","onboarding","product marketing","positioning","messaging","go-to-market","GTM","outbound",
+ "inbound","lead generation","demand generation","pipeline","B2B","B2C","SaaS","D2C","e-commerce","Shopify","WhatsApp","analytics","dashboards","automation","Zapier",
+ "n8n","Clay","Apollo","Notion","Figma","Canva","Webflow","WordPress","campaigns","community","partnerships","events","PR","brand","research","customer interviews",
+ "user research","stakeholders","cross-functional","AI","LLM","prompt engineering","sales","customer success","solutions","demos","technical","writing","storytelling",
+ "metrics","KPIs","OKRs","operations","project management","strategy","market research","competitive analysis","newsletter","landing pages","CAC","LTV","ROI","CTR",
+ "revenue","startup","founder","video","YouTube","Instagram","Reddit","influencer","affiliate","referral","pricing","presentations","data analysis","ownership"];
+const AIWORDS=["spearheaded","leveraged","leveraging","synergy","synergies","utilize","utilized","delve","passionate","results-driven","dynamic","seamless","seamlessly","robust",
+ "cutting-edge","innovative","orchestrated","fostered","pivotal","tapestry","meticulous","adept","proven track record","go-getter","detail-oriented","team player",
+ "in today's","game-changer","best-in-class","thought leader","hardworking","self-starter","ever-evolving","landscape","holistic","streamlined","empowered"];
+const TEMPLATED=["hope this email finds you","hope you are doing well","hope you're doing well","i am writing to","i came across","to whom it may concern","dear sir",
+ "kindly","i would like to express","please find attached","pick your brain","just checking in","circling back","touch base"];
+const VERBS=new Set("built led ran grew cut won made wrote drove set sold taught brought found took got gave kept put rose hit shipped began chose drew held lent met paid sent spent spoke stood told understood".split(" "));
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const kwRe=k=>new RegExp("(^|[^A-Za-z0-9])"+reEsc(k)+"(?![A-Za-z0-9])","i");
+const T={mode:null,id:null,raw:false,person:0,focus:null,follow:false};
+
+/* ---- CV model: {name,contact,sections:[{title,lines:[{t:'p'|'h'|'b',text}]}]} ---- */
+const clone=o=>JSON.parse(JSON.stringify(o));
+function baseCV(){return store.get("radar_cv",DEFAULT_CV)}
+function jobCVs(){return store.get("radar_cvjobs",{})}
+function getCV(id){return jobCVs()[id]||(baseCV()?clone(baseCV()):null)}
+function putCV(id,m){const all=jobCVs();all[id]=m;store.set("radar_cvjobs",all)}
+function cvToText(m){if(!m)return"";let o=[m.name,m.contact];for(const s of m.sections){o.push("","# "+s.title);
+  for(const l of s.lines)o.push(l.t==="b"?"- "+l.text:l.t==="h"?"## "+l.text:l.text)}return o.join("\n").trim()}
+function textToCV(t){const L=t.replace(/\r/g,"").split("\n").map(x=>x.trim());
+  const HEAD=/^(summary|profile|about|objective|experience|work experience|professional experience|internships?|education|skills|technical skills|projects|certifications?|achievements|awards|leadership|activities|volunteering|languages|interests|positions of responsibility)$/i;
+  const lines=L.filter(Boolean),m={name:"",contact:"",sections:[]};let cur=null,i=0;
+  if(lines[0]&&!lines[0].startsWith("#")){m.name=lines[0];i=1}
+  if(lines[i]&&!lines[i].startsWith("#")&&!HEAD.test(lines[i])&&/[@|·•]|\d{5}|linkedin|http/i.test(lines[i])){m.contact=lines[i];i++}
+  for(;i<lines.length;i++){let x=lines[i];
+    if(x.startsWith("## ")){(cur||(cur=add("Experience"))).lines.push({t:"h",text:x.slice(3).trim()});continue}
+    if(x.startsWith("# ")||HEAD.test(x.replace(/:$/,""))||(/^[A-Z][A-Z &/]{3,}$/.test(x)&&x.length<40)){cur=add(x.replace(/^#\s*/,"").replace(/:$/,""));continue}
+    if(!cur)cur=add("Summary");
+    if(/^[-•*–▪●]\s*/.test(x)){cur.lines.push({t:"b",text:x.replace(/^[-•*–▪●]\s*/,"")});continue}
+    const prevB=cur.lines.length&&cur.lines[cur.lines.length-1].t==="b",next=lines[i+1]||"";
+    cur.lines.push({t:(/\|/.test(x)||(/^[-•*–▪●]/.test(next)&&x.length<110&&!prevB&&!/[.]$/.test(x)))?"h":"p",text:x})}
+  function add(title){const s={title:title.charAt(0).toUpperCase()+title.slice(1).toLowerCase(),lines:[]};m.sections.push(s);return s}
+  return m}
+function cvPlain(m){return m?[m.name,m.contact,...m.sections.flatMap(s=>[s.title,...s.lines.map(l=>l.text)])].join("\n"):""}
+
+/* ---- analysis ---- */
+function jdOf(j){return(j.d&&j.d.description)||store.get("radar_jd",{})[j.id]||""}
+function jdKeywords(jd){const out=[];for(const k of KW){const n=(jd.match(new RegExp("(^|[^A-Za-z0-9])"+reEsc(k)+"(?![A-Za-z0-9])","gi"))||[]).length;if(n)out.push([k,n])}
+  return out.sort((a,b)=>b[1]-a[1]).slice(0,16).map(x=>x[0])}
+const STOP=new Set("about above after again their there these those which while with within would should could your you have will from that this they them what when where were been being into more most other some such than then very also able work team role strong good great using use".split(" "));
+function requirements(jd){const lines=jd.split(/\n|(?<=[.;])\s+(?=[A-Z])/).map(x=>x.replace(/^[•\-*\s]+/,"").trim()).filter(x=>x.length>18&&x.length<260);
+  const RQ=/(experience|you have|you are|must|able to|ability|proficien|familiar|knowledge|comfortable|strong|skills?|years?|degree|understanding|background in|track record)/i;
+  let r=lines.filter(x=>RQ.test(x));return[...new Set(r)].slice(0,7)}
+function reqStatus(req,cvtxt){const low=cvtxt.toLowerCase();
+  let words=KW.filter(k=>kwRe(k).test(req));
+  if(!words.length)words=[...new Set((req.toLowerCase().match(/[a-z][a-z-]{4,}/g)||[]).filter(w=>!STOP.has(w)))].slice(0,6);
+  if(!words.length)return["part",[]];
+  const miss=words.filter(w=>!kwRe(w).test(low)),cov=1-miss.length/words.length;
+  return[cov>=.6?"ok":cov>=.25?"part":"gap",miss]}
+function xyz(text){const w=(text.trim().split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z]/g,"");
+  return{x:/ed$/.test(w)||VERBS.has(w),y:/(?<![A-Za-z])\d|%|₹|\$|\bdoubled?\b|\btripled?\b|\bhalf\b/i.test(text),z:/\b(by|through|using|via|with|after|across|leveraging)\b/i.test(text)}}
+function xyzHint(r){return!r.x?"Start with what you did: Built, Grew, Launched.":!r.y?"Add a number: how many, how much, how fast.":!r.z?"Say how: by doing what, using what.":""}
+function humanScore(text){const low=text.toLowerCase(),hits=AIWORDS.filter(w=>low.includes(w));
+  const dashes=(text.match(/—/g)||[]).length;return{score:Math.max(5,100-hits.length*12-Math.max(0,dashes-1)*5),hits,dashes}}
+function analyse(j,m){const jd=jdOf(j),kws=jdKeywords(jd),txt=cvPlain(m);
+  const found=kws.filter(k=>kwRe(k).test(txt));
+  const bullets=m?m.sections.flatMap((s,si)=>s.lines.map((l,li)=>({...l,si,li})).filter(l=>l.t==="b")):[];
+  const full=bullets.filter(b=>{const r=xyz(b.text);return r.x&&r.y&&r.z}).length;
+  return{jd,kws,found,match:kws.length?Math.round(found.length/kws.length*100):0,bullets,full,human:humanScore(txt),reqs:requirements(jd).map(r=>[r,...reqStatus(r,txt)])}}
+function hl(text,kws){let h=esc(text);if(!kws.length)return h;
+  const re=new RegExp("(^|[^A-Za-z0-9])("+kws.slice().sort((a,b)=>b.length-a.length).map(k=>reEsc(esc(k))).join("|")+")(?![A-Za-z0-9])","gi");
+  return h.replace(re,"$1<mark>$2</mark>")}
+
+/* ---- studio shell ---- */
+const job=()=>DATA.jobs.find(x=>String(x.id)===String(T.id));
+function openStudio(mode,id,person){T.mode=mode;T.id=id;T.raw=false;T.person=person??0;T.follow=false;
+  if(mode==="mail"){const e=store.get("radar_emailed",{})[id];T.follow=!!(e&&(Date.now()-e.at)/864e5>=4)}
+  document.body.classList.add("studio-open");drawStudio()}
+function closeStudio(){document.body.classList.remove("studio-open");T.mode=null;$("studio").innerHTML="";if(typeof render==="function")render()}
+const ring=(v)=>{const c=2*Math.PI*15;return`<svg class="ring" viewBox="0 0 38 38"><circle class="bg" cx="19" cy="19" r="15"/><circle class="fg" cx="19" cy="19" r="15" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-v/100)}" transform="rotate(-90 19 19)"/></svg>`};
+function drawStudio(){const j=job();if(!j)return closeStudio();$("studio").innerHTML=T.mode==="cv"?cvStudio(j):mailStudio(j);
+  if(T.mode==="mail")document.querySelectorAll(".blk textarea").forEach(grow)}
+
+/* ---- CV studio ---- */
+function cvStudio(j){const m=getCV(j.id),a=analyse(j,m);
+  return`<div class="st-bar glass"><div class="st-t"><b>Tailor CV for ${esc(j.title)}</b><span>${esc(j.company)}. Edits save for this job only.</span></div>
+    <div class="st-stats" id="st-stats">${cvStats(a)}</div>
+    <div class="st-act">${m?`<button class="btn glass" data-st="raw">${T.raw?"Done Editing Text":"Edit as Text"}</button>
+      <button class="btn glass" data-st="claude">Ask Claude</button><button class="btn primary" data-st="pdf">Export PDF</button>`:""}
+      <button class="x" data-st="close" aria-label="Close">✕</button></div></div>
+  <div class="st-body"><aside class="st-col glass" id="st-left">${cvLeft(j,a)}</aside>
+    <div class="st-mid"><div class="paper" id="paper">${paperHTML(j,m,a)}</div></div>
+    <aside class="st-col glass st-r" id="st-right">${cvRight(j,m,a)}</aside></div>`}
+function cvStats(a){return`<div class="stat">${ring(a.match)}<span><b>${a.match}%</b>keyword match</span></div>
+  <div class="stat"><span><b>${a.full} of ${a.bullets.length}</b>XYZ bullets</span></div>
+  <div class="stat"><span><b>${a.human.score}%</b>sounds human</span></div>`}
+function cvLeft(j,a){
+  if(!a.jd)return`<div class="st-h">Job Description</div><p class="muted" style="margin-bottom:10px">This job page couldn't be read. Paste the description to get suggestions.</p>
+    <textarea class="jd" id="jd-in" placeholder="Paste the job description"></textarea>`;
+  return`<div class="st-h">What They Want</div><div>${a.reqs.map(([r,st,miss])=>`<div class="req"><span class="ri ${st}">${st==="ok"?"✓":st==="part"?"~":"!"}</span>
+      <div>${esc(r.length>120?r.slice(0,118)+"…":r)}${st!=="ok"&&miss.length?`<small>Not in your CV: ${esc(miss.slice(0,3).join(", "))}</small>`:""}</div></div>`).join("")||'<p class="muted">No clear requirement lines found. Use the keywords below.</p>'}</div>
+    <div class="st-h">Their Words</div><div class="kws">${a.kws.map(k=>`<span class="kw ${a.found.includes(k)?"on":""}">${esc(k)}</span>`).join("")||'<span class="muted">None found.</span>'}</div>
+    <div class="st-h">Sounds Human?</div><div><div class="bar"><i style="width:${a.human.score}%"></i></div>
+      <p class="flag">${a.human.hits.length?`Reads like AI: <b>${a.human.hits.map(esc).join(", ")}</b>. Swap for plain verbs.`:"No buzzwords found. Good."}${a.human.dashes>1?" Fewer long dashes.":""}</p></div>`}
+function cvRight(j,m,a){if(!m)return`<div class="st-h">How This Works</div><p class="muted">Paste your CV once. Each job gets its own copy, so edits here never touch your main CV unless you choose Save as My CV.</p>`;
+  const s=[];
+  for(const b of a.bullets){const r=xyz(b.text),h=xyzHint(r);if(h&&s.length<4)s.push(`<div class="sug"><b>${!r.y?"Missing Y (number)":!r.x?"Missing X (result)":"Missing Z (how)"}</b><q>${esc(b.text.slice(0,70))}${b.text.length>70?"…":""}</q><br>${h}</div>`)}
+  const miss=a.kws.filter(k=>!a.found.includes(k)).slice(0,4);
+  if(miss.length)s.push(`<div class="sug"><b>Their words you don't use</b>${miss.map(esc).join(", ")}. Add one only where it's true for your work.</div>`);
+  // move up: strongest bullet per role first
+  m.sections.forEach((sec,si)=>{let start=-1;const groups=[];sec.lines.forEach((l,li)=>{if(l.t==="b"){if(start<0)start=li}else if(start>=0){groups.push([start,li]);start=-1}});
+    if(start>=0)groups.push([start,sec.lines.length]);
+    for(const[g0,g1]of groups){let best=g0,bs=-1;for(let k=g0;k<g1;k++){const sc=a.kws.filter(w=>kwRe(w).test(sec.lines[k].text)).length;if(sc>bs){bs=sc;best=k}}
+      const first=a.kws.filter(w=>kwRe(w).test(sec.lines[g0].text)).length;
+      if(best!==g0&&bs>first&&s.length<8)s.push(`<div class="sug"><b>Move up</b><q>${esc(sec.lines[best].text.slice(0,70))}…</q> matches this job best.<br><button class="pill-btn" data-st="up" data-si="${si}" data-li="${best}" data-to="${g0}">Move to Top</button></div>`)}});
+  for(const[r,st]of a.reqs)if(st==="gap"&&s.length<10)s.push(`<div class="sug"><b>Gap</b>${esc(r.slice(0,90))}${r.length>90?"…":""}. Leave it, or mention a real project that comes close.</div>`);
+  return`<div class="st-h">Suggestions</div>${s.join("")||'<p class="muted">Looks strong. Read it once out loud before sending.</p>'}
+    <div class="st-h" style="margin-top:22px">Your CV</div><p class="muted">This copy is for ${esc(j.company)}.</p>
+    <div class="actions" style="margin-top:10px"><button class="pill-btn" data-st="savebase">Save as My CV</button><button class="pill-btn" data-st="reset">Reset to My CV</button></div>`}
+function paperHTML(j,m,a){
+  if(!m)return`<div class="p-empty"><h2>Add your CV</h2><p>Paste it as text. Lines starting with a dash become bullets. Headings like Experience and Education become sections.</p>
+    <textarea id="cv-in" placeholder="Your Name&#10;email · phone · linkedin.com/in/you&#10;&#10;# Experience&#10;## Marketing Associate | Company | 2025 – Present&#10;- Grew newsletter signups 40% in 3 months by rewriting the welcome flow"></textarea>
+    <button class="btn primary" data-st="import">Use This CV</button></div>`;
+  if(T.raw)return`<textarea class="rawcv" id="rawcv" spellcheck="true">${esc(cvToText(m))}</textarea>`;
+  const ed=(path,text,cls,tag="div")=>`<${tag} class="${cls}" contenteditable="true" spellcheck="true" data-p="${path}">${hl(text,a.kws)}</${tag}>`;
+  return ed("name",m.name,"p-name")+ed("contact",m.contact,"p-ct")+m.sections.map((s,si)=>`<div class="p-sec">${ed(si+".t",s.title,"p-st")}
+    ${s.lines.map((l,li)=>{const p=si+"."+li;if(l.t!=="b")return ed(p,l.text,l.t==="h"?"p-h":"p-p");const r=xyz(l.text),h=xyzHint(r);
+      return`<div class="p-b">${ed(p,l.text,"")}<span class="xyz" id="x-${si}-${li}" title="X result · Y number · Z how"><i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i></span></div>
+      <div class="p-hint" id="h-${si}-${li}">${h}</div>`}).join("")}
+    <button class="addb" data-st="addb" data-si="${si}">+ Add bullet</button></div>`).join("")}
+function setPath(m,p,v){if(p==="name")m.name=v;else if(p==="contact")m.contact=v;else{const[si,li]=p.split(".");if(li==="t")m.sections[si].title=v;else m.sections[si].lines[li].text=v}}
+let saveT;
+function cvEdited(el){const j=job(),m=getCV(j.id);setPath(m,el.dataset.p,el.innerText.replace(/\n+/g," ").trim());putCV(j.id,m);
+  const[si,li]=el.dataset.p.split(".");const x=$(`x-${si}-${li}`);
+  if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;$(`h-${si}-${li}`).textContent=xyzHint(r)}
+  clearTimeout(saveT);saveT=setTimeout(()=>{const a=analyse(j,getCV(j.id));$("st-stats").innerHTML=cvStats(a);$("st-left").innerHTML=cvLeft(j,a);$("st-right").innerHTML=cvRight(j,getCV(j.id),a)},350)}
+function cvAskClaude(j){const m=getCV(j.id);return`Tailor my CV for this job.
+Rules: use only facts that are in my CV. Never invent numbers, tools or results. Rewrite each bullet as "Accomplished X, measured by Y, by doing Z". Use the job's own words only where they're true for me. Put the strongest bullet first under each role. Keep it to one page. No buzzwords (spearheaded, leveraged, passionate, results-driven). At the end, list the gaps honestly and ask me for any real numbers you need.
+
+JOB: ${j.title} at ${j.company}
+${j.url}
+
+${jdOf(j).slice(0,5000)}
+
+MY CV:
+${cvToText(m)}`}
+function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w){toast("Allow pop-ups to export the PDF.");return}
+  const head=t=>{const parts=t.split(/\s+\|\s+/);const last=parts.length>1&&/(\d{4}|present|current)/i.test(parts[parts.length-1])?parts.pop():"";
+    return`<div class="h"><span><b>${esc(parts[0]||"")}</b>${parts.length>1?", "+esc(parts.slice(1).join(", ")):""}</span><span>${esc(last)}</span></div>`};
+  const body=m.sections.map(s=>{let h=`<h2>${esc(s.title)}</h2>`,open=false;
+    for(const l of s.lines){if(l.t==="b"){if(!open){h+="<ul>";open=true}h+=`<li>${esc(l.text)}</li>`;continue}
+      if(open){h+="</ul>";open=false}h+=l.t==="h"?head(l.text):`<p>${esc(l.text)}</p>`}
+    return h+(open?"</ul>":"")}).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(m.name||"CV")} CV - ${esc(j.company)}</title><style>
+  @page{size:A4;margin:14mm 16mm}*{box-sizing:border-box}body{font:10.5pt/1.4 Helvetica,Arial,sans-serif;color:#111;margin:0}
+  h1{font-size:20pt;margin:0;font-weight:700}.ct{color:#444;font-size:9.5pt;margin:3px 0 4px}
+  h2{font-size:10.5pt;margin:12px 0 5px;padding-bottom:2px;border-bottom:1px solid #999;letter-spacing:.03em}
+  .h{display:flex;justify-content:space-between;gap:12px;margin-top:6px}.h span:last-child{color:#444;white-space:nowrap}
+  p{margin:2px 0}ul{margin:2px 0 0 16px;padding:0}li{margin:1px 0}</style></head>
+  <body><h1>${esc(m.name)}</h1><div class="ct">${esc(m.contact)}</div>${body}<script>onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);w.document.close()}
+
+/* ---- email studio ---- */
+const fundFor=c=>{const n=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");return(DATA.funding||[]).find(f=>n(f.company)===n(c))};
+function people(j){return((j.d&&j.d.people)||[]).filter(p=>p.role!=="HR"||true)}
+function firstName(p){const n=p&&p.name||"";return(!n||n.includes("@")||/^(founders?|hiring manager|recruiter)$/i.test(n))?"":n.split(/\s+/)[0]}
+function bestBullet(m){if(!m)return"";const bs=m.sections.flatMap(s=>s.lines.filter(l=>l.t==="b").map(l=>l.text));
+  const sc=t=>{const r=xyz(t);return r.x+r.y*2+r.z};return bs.sort((a,b)=>sc(b)-sc(a))[0]||""}
+function currentRole(m){const h=m&&m.sections.flatMap(s=>s.lines).find(l=>l.t==="h");if(!h)return null;const p=h.text.split(/\s+\|\s+|,\s+| at /);return{role:p[0],co:p[1]||""}}
+const lowerFirst=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
+function draftFor(j){const all=store.get("radar_drafts",{}),k=j.id+(T.follow?"f":"");if(all[k])return all[k];
+  const p=people(j)[T.person],m=baseCV()||getCV(j.id),f=fundFor(j.company),kw=jdKeywords(jdOf(j)),cr=currentRole(m),bb=bestBullet(m),fn=firstName(p);
+  const e=store.get("radar_emailed",{})[j.id];
+  if(T.follow)return{to:e?.to||p?.email||"",subject:"Re: "+(e?.subject||j.title+" role"),hi:`Hi ${fn||"there"},`,
+    hook:`Following up on my note about the ${j.title} role.`,proof:"Since then, [one new thing: a small idea, a teardown, or a result].",value:"",ask:"Worth a quick chat this week?",
+    sign:`Thanks,\n${(m&&m.name)||"[Your name]"}`};
+  return{to:p?.email||"",subject:`${j.title} at ${j.company}`,hi:`Hi ${fn||"there"},`,
+    hook:f?`Congrats on the ${[f.amount,f.round].filter(Boolean).join(" ")}. Saw you're hiring a ${j.title} and wanted to write to you directly.`
+      :`Saw ${j.company} is hiring a ${j.title} and wanted to write to you directly.`,
+    proof:cr&&bb?`I'm a ${cr.role}${cr.co?" at "+cr.co:""}. Recently I ${lowerFirst(bb.replace(/\.$/,""))}.`:"[One result you're proud of, with a number.]",
+    value:`One idea for ${j.company}: [a specific thing you'd do in month one${kw[0]?" around "+kw[0]:""}].`,
+    ask:"Open to a 15-minute call this week?",sign:`Thanks,\n${(m&&m.name)||"[Your name]"}${m&&m.contact?"\n"+m.contact:""}`}}
+function saveDraft(j,d){const all=store.get("radar_drafts",{});all[j.id+(T.follow?"f":"")]=d;store.set("radar_drafts",all)}
+function readDraft(){const d={};document.querySelectorAll("[data-f]").forEach(el=>d[el.dataset.f]=el.value);return d}
+const mailBody=d=>[d.hi,"",d.hook,d.proof,d.value,"",d.ask,"",d.sign].filter((x,i,a)=>x!==""||a[i-1]!=="").join("\n").replace(/\n{3,}/g,"\n\n").trim();
+const words=t=>(t.match(/[A-Za-z0-9'’]+/g)||[]).length;
+function mailChecks(d,j){const body=[d.hook,d.proof,d.value,d.ask].join(" "),low=(body+" "+d.subject).toLowerCase(),n=words(body),q=(body.match(/\?/g)||[]).length;
+  const tmpl=TEMPLATED.filter(t=>low.includes(t)),h=humanScore(body+" "+d.subject);
+  return[[n<=120,`${n} words${n<=120?". Short enough to read on a phone.":". Cut to under 120."}`],
+    [q===1,q===1?"One clear ask.":q?`${q} questions. Keep one ask.`:"Add one clear ask."],
+    [!tmpl.length,tmpl.length?`Sounds templated: "${tmpl[0]}".`:"No template phrases."],
+    [!/^hi there,?$/i.test(d.hi.trim()),/^hi there/i.test(d.hi.trim())?"Use their first name.":"Uses their name."],
+    [new RegExp(reEsc(j.company),"i").test(body),new RegExp(reEsc(j.company),"i").test(body)?"Mentions their company.":"Mention their company once."],
+    [!/\[[^\]]+\]/.test(body+d.sign),/\[[^\]]+\]/.test(body+d.sign)?"Fill in the [brackets].":"No blanks left."],
+    [words(d.subject)<=8&&words(d.subject)>0,words(d.subject)<=8?"Subject is short.":"Shorten the subject."],
+    [h.score>=80,h.hits.length?`Buzzwords: ${h.hits.join(", ")}.`:"Sounds like a person."]]}
+function mailStudio(j){const d=draftFor(j),ppl=people(j),f=fundFor(j.company),c=(j.d&&j.d.company)||{},kw=jdKeywords(jdOf(j)).slice(0,4),bb=bestBullet(baseCV()||getCV(j.id));
+  const chk=mailChecks(d,j),ok=chk.filter(x=>x[0]).length;const e=store.get("radar_emailed",{})[j.id];
+  const facts=[j.title,j.company,f&&[f.amount,f.round].filter(Boolean).join(" "),f&&"raised "+(f.amount||"funding"),c.team_size&&c.team_size+" people",c.batch&&"YC "+c.batch,...kw,bb&&bb.slice(0,80)].filter(Boolean);
+  return`<div class="st-bar glass"><div class="st-t"><b>${T.follow?"Follow-up":"Email"} for ${esc(j.title)}</b><span>${esc(j.company)}. Drafts save as you type.</span></div>
+    <div class="st-stats" id="st-stats"><div class="stat">${ring(Math.round(ok/chk.length*100))}<span><b>${ok} of ${chk.length}</b>checks pass</span></div></div>
+    <div class="st-act"><button class="btn glass" data-st="mclaude">Ask Claude</button><button class="btn glass" data-st="copy">Copy</button>
+      <button class="btn glass" data-st="gmail">Open in Gmail</button><button class="btn primary" data-st="sent">${e&&!T.follow?"✓ Emailed":"Mark as Emailed"}</button>
+      <button class="x" data-st="close" aria-label="Close">✕</button></div></div>
+  <div class="st-body"><aside class="st-col glass"><div class="st-h">Sending To</div><div>${ppl.map((p,i)=>`<button class="who" data-st="who" data-i="${i}" aria-pressed="${i===T.person}">
+      <span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${esc(initials(p.name))}</span><span>${esc(p.name)}<small>${esc(p.role)}${p.need!=null?`, worth emailing ${p.need}%`:""}</small></span></button>`).join("")||'<p class="muted">No people found for this job. Type the address below.</p>'}</div>
+    <div class="st-h">Tap to Use</div><div class="fchips">${facts.map(x=>`<button class="fchip" data-st="fact" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    ${e?`<div class="fu">Emailed <b>${new Date(e.at).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</b>.${T.follow?"":`<button data-st="follow">Write Follow-up</button>`}</div>`:""}</aside>
+    <div class="st-mid"><div class="mail glass">
+      <div class="mrow2"><label for="m-to">To</label><input id="m-to" data-f="to" value="${esc(d.to)}" placeholder="name@company.com" autocomplete="off"></div>
+      <div class="mrow2"><label for="m-su">Subject</label><input id="m-su" data-f="subject" value="${esc(d.subject)}"></div>
+      ${[["hi","Greeting"],["hook","Hook: why them, why now"],["proof","Proof: one real result"],["value","Value: what you'd do for them"],["ask","Ask: one small step"],["sign","Sign-off"]].map(([k,l])=>
+        `<div class="blk"><label for="b-${k}">${l}</label><textarea id="b-${k}" data-f="${k}" rows="1">${esc(d[k])}</textarea></div>`).join("")}
+    </div></div>
+    <aside class="st-col glass st-r"><div class="st-h">Email Health</div><div id="m-chk">${chk.map(([g,t])=>`<div class="chk"><span class="ri ${g?"ok":"gap"}">${g?"✓":"!"}</span><span>${esc(t)}</span></div>`).join("")}</div>
+      <div class="st-h">Tips</div><div class="muted"><p>Founders read short emails. Three to five sentences wins.</p><p style="margin-top:8px">Send between 8 and 10 AM their time, Tuesday to Thursday.</p>
+      <p style="margin-top:8px">No reply in 4 days? Send one follow-up. This page reminds you.</p></div></aside></div>`}
+function grow(t){t.style.height="auto";t.style.height=t.scrollHeight+"px"}
+function mailEdited(){const j=job(),d=readDraft();saveDraft(j,d);const chk=mailChecks(d,j),ok=chk.filter(x=>x[0]).length;
+  $("m-chk").innerHTML=chk.map(([g,t])=>`<div class="chk"><span class="ri ${g?"ok":"gap"}">${g?"✓":"!"}</span><span>${esc(t)}</span></div>`).join("");
+  $("st-stats").innerHTML=`<div class="stat">${ring(Math.round(ok/chk.length*100))}<span><b>${ok} of ${chk.length}</b>checks pass</span></div>`}
+function emailedNote(j){const e=store.get("radar_emailed",{})[j.id];if(!e)return"";const days=Math.floor((Date.now()-e.at)/864e5);
+  return`<p class="note">Emailed ${esc(e.name||e.to||"them")} ${days?days+(days===1?" day":" days")+" ago":"today"}.${days>=4?` <button class="more" style="margin:0" data-compose="${j.id}" data-follow="1">Write Follow-up</button>`:` Follow up in ${4-days} ${4-days===1?"day":"days"} if no reply.`}</p>`}
+
+/* ---- events ---- */
+document.addEventListener("click",e=>{
+  const op=e.target.closest("[data-tailor],[data-compose]");
+  if(op){e.stopPropagation();if(op.dataset.tailor)openStudio("cv",op.dataset.tailor);else{openStudio("mail",op.dataset.compose,op.dataset.person?Number(op.dataset.person):0);
+    if(op.dataset.follow){T.follow=true;drawStudio()}}return}
+  const b=e.target.closest("[data-st]");if(!b||!T.mode)return;const j=job(),a=b.dataset.st;
+  if(a==="close")return closeStudio();
+  if(a==="import"){const t=$("cv-in").value.trim();if(!t)return toast("Paste your CV first.");const m=textToCV(t);store.set("radar_cv",m);putCV(j.id,clone(m));drawStudio();return toast("Saved as your CV.")}
+  if(a==="raw"){if(T.raw){putCV(j.id,textToCV($("rawcv").value))}T.raw=!T.raw;return drawStudio()}
+  if(a==="claude"){if(T.raw)putCV(j.id,textToCV($("rawcv").value));return copyText(cvAskClaude(j)).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
+  if(a==="pdf"){if(T.raw)putCV(j.id,textToCV($("rawcv").value));return exportPDF(j)}
+  if(a==="savebase"){store.set("radar_cv",clone(getCV(j.id)));return toast("Saved as your main CV.")}
+  if(a==="reset"){const all=jobCVs();delete all[j.id];store.set("radar_cvjobs",all);drawStudio();return toast("Back to your main CV.")}
+  if(a==="up"){const m=getCV(j.id),s=m.sections[b.dataset.si],[x]=s.lines.splice(Number(b.dataset.li),1);s.lines.splice(Number(b.dataset.to),0,x);putCV(j.id,m);return drawStudio()}
+  if(a==="addb"){const m=getCV(j.id),s=m.sections[b.dataset.si];s.lines.push({t:"b",text:""});putCV(j.id,m);drawStudio();
+    const els=document.querySelectorAll(`[data-p^="${b.dataset.si}."]`);els[els.length-1]?.focus();return}
+  if(a==="who"){T.person=Number(b.dataset.i);const d=readDraft(),p=people(j)[T.person],fn=firstName(p);d.hi=`Hi ${fn||"there"},`;if(p.email)d.to=p.email;saveDraft(j,d);return drawStudio()}
+  if(a==="fact"){const t=T.focus&&document.body.contains(T.focus)?T.focus:$("b-value");const s=t.selectionStart??t.value.length,v=b.dataset.v;
+    t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd??s);t.focus();t.selectionStart=t.selectionEnd=s+v.length;if(t.tagName==="TEXTAREA")grow(t);return mailEdited()}
+  if(a==="follow"){T.follow=true;return drawStudio()}
+  const d=readDraft();
+  if(a==="copy")return copyText(mailBody(d)).then(ok=>toast(ok?"Email copied.":"Couldn't copy."));
+  if(a==="mclaude")return copyText(`Improve this cold email to ${(people(j)[T.person]||{}).name||"them"} at ${j.company} about the ${j.title} role (${j.url}).
+Rules: under 120 words, one ask, sounds like me, no clichés or buzzwords. Use only facts from my CV. Fill the [brackets] with something specific about ${j.company}, or ask me.
+
+SUBJECT: ${d.subject}
+
+${mailBody(d)}
+
+MY CV:
+${cvToText(baseCV()||getCV(j.id))}`).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."));
+  if(a==="gmail"){window.open("https://mail.google.com/mail/?view=cm&fs=1&"+new URLSearchParams({to:d.to||"",su:d.subject||"",body:mailBody(d)}),"_blank","noopener");return}
+  if(a==="sent"){const all=store.get("radar_emailed",{}),p=people(j)[T.person];all[j.id]={at:Date.now(),to:d.to,name:(p&&firstName(p))?p.name:d.to,subject:d.subject};
+    store.set("radar_emailed",all);toast("Marked as emailed. Follow-up reminder in 4 days.");return drawStudio()}
+});
+document.addEventListener("input",e=>{if(!T.mode)return;const t=e.target;
+  if(t.id==="jd-in"){const all=store.get("radar_jd",{});all[T.id]=t.value;store.set("radar_jd",all);clearTimeout(saveT);saveT=setTimeout(()=>{const j=job(),m=getCV(j.id),a=analyse(j,m);
+    $("st-stats").innerHTML=cvStats(a);$("st-right").innerHTML=cvRight(j,m,a);$("paper").innerHTML=paperHTML(j,m,a)},500);return}
+  if(t.isContentEditable&&t.dataset.p)return cvEdited(t);
+  if(t.dataset.f){if(t.tagName==="TEXTAREA")grow(t);mailEdited()}});
+document.addEventListener("focusin",e=>{if(T.mode==="mail"&&e.target.dataset&&e.target.dataset.f)T.focus=e.target});
+document.addEventListener("focusout",e=>{const t=e.target;if(T.mode==="cv"&&t.isContentEditable&&t.dataset.p){const a=analyse(job(),getCV(T.id));t.innerHTML=hl(t.innerText.replace(/\n+/g," ").trim(),a.kws)}});
+document.addEventListener("paste",e=>{const t=e.target.closest&&e.target.closest("[contenteditable]");if(!t||!T.mode)return;e.preventDefault();
+  document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text").replace(/\s*\n\s*/g," "))});
+document.addEventListener("keydown",e=>{if(!T.mode)return;
+  if(e.key==="Escape"){e.preventDefault();return closeStudio()}
+  const t=e.target;if(!(t.isContentEditable&&t.dataset.p))return;const[si,li]=t.dataset.p.split(".");
+  if(e.key==="Enter"){e.preventDefault();if(li==="t"||!(si>=0))return t.blur();const m=getCV(T.id),s=m.sections[si],ty=s.lines[li].t==="h"?"b":s.lines[li].t;
+    s.lines.splice(Number(li)+1,0,{t:ty,text:""});putCV(T.id,m);drawStudio();document.querySelector(`[data-p="${si}.${Number(li)+1}"]`)?.focus();return}
+  if(e.key==="Backspace"&&!t.innerText.trim()&&li!=="t"&&si>=0){e.preventDefault();const m=getCV(T.id);m.sections[si].lines.splice(li,1);putCV(T.id,m);drawStudio();
+    const prev=document.querySelector(`[data-p="${si}.${Number(li)-1}"]`)||document.querySelector(`[data-p="${si}.t"]`);if(prev){prev.focus();document.getSelection().selectAllChildren(prev);document.getSelection().collapseToEnd()}}});
+</script>
+
+</body></html>
