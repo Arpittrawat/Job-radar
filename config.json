@@ -1,0 +1,19 @@
+{
+  "interval_note": "Runs at 09:00 and 21:00 IST via launchd (step 6). Not used by step 1.",
+  "tags": {
+    "GTM engineer": ["gtm engineer", "go-to-market engineer", "go to market engineer"],
+    "Growth engineer": ["growth engineer"],
+    "Solutions engineer": ["solutions engineer", "solution engineer", "sales engineer"],
+    "Technical marketer": ["technical marketer", "technical marketing"],
+    "Growth associate": ["growth associate", "growth analyst", "growth intern"],
+    "Founder's office": ["founder's office", "founders office", "founder’s office", "chief of staff"],
+    "Marketing ops": ["marketing ops", "marketing operations", "revops", "revenue operations"],
+    "FDE": ["forward deployed", "forward-deployed", "fde"],
+    "Marketing": ["marketing", "seo", "content", "demand gen", "brand", "lifecycle", "growth", "community", "social media", "copywriter", "performance", "gtm", "go-to-market", "go to market", "partnerships", "product marketing"]
+  },
+  "locations": {
+    "India": ["india", "bengaluru", "bangalore", "gurugram", "gurgaon", "delhi", "mumbai", "pune", "hyderabad", "chennai", "noida"],
+    "Remote": ["remote", "anywhere", "worldwide", "global"],
+    "US": ["united states", "usa", "us,", ", us", "new york", "san francisco", "sf", "ny", "california", "texas", "seattle", "austin", "boston", "chicago", "los angeles", "nyc", "remote (us"]
+  }
+}
