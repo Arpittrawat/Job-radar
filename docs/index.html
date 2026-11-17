@@ -239,7 +239,7 @@ button{background:none;border:0;cursor:pointer}
   .fab{display:grid;place-items:center;position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);width:64px;height:64px;border-radius:50%;z-index:10}
 }
 .toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,20px);opacity:0;padding:12px 18px;border-radius:22px;font-size:14px;font-weight:500;
-  transition:opacity .3s,transform .4s var(--spring);z-index:30;pointer-events:none;white-space:nowrap}
+  transition:opacity .3s,transform .4s var(--spring);z-index:60;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .scrim{position:fixed;inset:0;background:rgba(40,20,20,.28);opacity:0;pointer-events:none;transition:opacity .4s var(--spring);z-index:20}
 .sheet{position:fixed;left:8px;right:8px;bottom:8px;max-height:86vh;overflow-y:auto;border-radius:38px;z-index:21;
@@ -451,8 +451,7 @@ function detailHTML(j,sheet){
       <div class="actions"><a class="btn primary" href="${esc(j.url)}" target="_blank" rel="noopener">Open Job</a>
         <button class="btn glass ${done?"done":""}" data-apply="${j.id}">${done?"✓ Applied":"Mark as Applied"}</button>
         <button class="btn glass" data-tailor="${j.id}">Tailor CV</button>
-        <button class="btn glass" data-compose="${j.id}">Write Email</button></div>
-      ${typeof emailedNote==="function"?emailedNote(j):""}
+</div>
     </div>
     <div class="facts">
       <div class="fact"><small>Role type</small><span>${esc(j.tag||"Other")}</span></div>
@@ -470,7 +469,7 @@ function jobExtras(j){const d=j.d;
   const people=(d.people||[]).map((p,i)=>{
     const link=p.linkedin?`<a class="pill-btn" href="${esc(p.linkedin)}" target="_blank" rel="noopener" aria-label="LinkedIn">${LI}<span>Profile</span></a>`
       :p.search?`<a class="pill-btn" href="${esc(p.search)}" target="_blank" rel="noopener">${LI}<span>Find</span></a>`:"";
-    const mail=`<button class="pill-btn blue" data-compose="${j.id}" data-person="${i}">Write</button>`;
+    const mail=p.email?`<a class="pill-btn blue" href="mailto:${esc(p.email)}">Email</a>`:"";
     return`<div class="prow"><span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${p.email&&!p.linkedin&&p.role==="From the post"?"@":esc(initials(p.name))}</span>
       <div class="pinfo"><div class="pname">${esc(p.name)} <span class="role">${esc(p.role)}</span></div><div class="ptitle">${esc(p.title||"")}</div>
         <div class="meters">${meter("Worth emailing",p.need)}${meter("Email findable",p.exists)}</div></div>
@@ -815,12 +814,11 @@ function hl(text,kws){let h=esc(text);if(!kws.length)return h;
 /* ---- studio shell ---- */
 const job=()=>DATA.jobs.find(x=>String(x.id)===String(T.id));
 function openStudio(mode,id,person){T.mode=mode;T.id=id;T.raw=false;T.person=person??0;T.follow=false;
-  if(mode==="mail"){const e=store.get("radar_emailed",{})[id];T.follow=!!(e&&(Date.now()-e.at)/864e5>=4)}
   document.body.classList.add("studio-open");drawStudio()}
 function closeStudio(){document.body.classList.remove("studio-open");T.mode=null;$("studio").innerHTML="";if(typeof render==="function")render()}
 const ring=(v)=>{const c=2*Math.PI*15;return`<svg class="ring" viewBox="0 0 38 38"><circle class="bg" cx="19" cy="19" r="15"/><circle class="fg" cx="19" cy="19" r="15" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-v/100)}" transform="rotate(-90 19 19)"/></svg>`};
-function drawStudio(){const j=job();if(!j)return closeStudio();$("studio").innerHTML=T.mode==="cv"?cvStudio(j):mailStudio(j);
-  if(T.mode==="mail")document.querySelectorAll(".blk textarea").forEach(grow)}
+function drawStudio(){const j=job();if(!j)return closeStudio();$("studio").innerHTML=cvStudio(j);
+}
 
 /* ---- CV studio ---- */
 function cvStudio(j){const m=getCV(j.id),a=analyse(j,m);
@@ -882,16 +880,8 @@ function cvEdited(el){const j=job(),m=getCV(j.id);setPath(m,el.dataset.p,el.inne
   if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;
     const a0=analyse(j,m),t=m.sections[si].lines[li].text;$(`h-${si}-${li}`).innerHTML=tagHTML(t,a0,si,li);$(`v-${si}-${li}`).className="p-line v-"+(T.marks?verdict(t,a0)[0]:"off")}
   clearTimeout(saveT);saveT=setTimeout(()=>{const a=analyse(j,getCV(j.id));$("st-stats").innerHTML=cvStats(a);$("st-left").innerHTML=cvLeft(j,a);$("st-right").innerHTML=cvRight(j,getCV(j.id),a)},350)}
-function cvAskClaude(j){const m=getCV(j.id);return`Tailor my CV for this job.
-Rules: use only facts that are in my CV. Never invent numbers, tools or results. Rewrite each bullet as "Accomplished X, measured by Y, by doing Z". Use the job's own words only where they're true for me. Put the strongest bullet first under each role. Keep it to one page. No buzzwords (spearheaded, leveraged, passionate, results-driven). At the end, list the gaps honestly and ask me for any real numbers you need.
-
-JOB: ${j.title} at ${j.company}
-${j.url}
-
-${jdOf(j).slice(0,5000)}
-
-MY CV:
-${cvToText(m)}`}
+function cvAskClaude(j){return`Look at the CV on this page. I'm applying for ${j.title} at ${j.company}.
+List the 5 lines I should change most, each with one better version in the form "Accomplished X, measured by Y, by doing Z". Use only facts already in my CV, put [X] where I need to add a real number. No long dashes, no buzzwords. Keep the whole answer short.`}
 function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w){toast("Allow pop-ups to export the PDF.");return}
   const head=t=>{const parts=t.split(/\s+\|\s+/);const last=parts.length>1&&/(\d{4}|present|current)/i.test(parts[parts.length-1])?parts.pop():"";
     return`<div class="h"><span><b>${esc(parts[0]||"")}</b>${parts.length>1?", "+esc(parts.slice(1).join(", ")):""}</span><span>${esc(last)}</span></div>`};
@@ -907,122 +897,35 @@ function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w
   p{margin:2px 0}ul{margin:2px 0 0 16px;padding:0}li{margin:1px 0}</style></head>
   <body><h1>${esc(m.name)}</h1>${m.headline?`<div class="hl">${esc(m.headline)}</div>`:""}<div class="ct">${esc(m.contact)}</div>${body}<script>onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);w.document.close()}
 
-/* ---- email studio ---- */
-const fundFor=c=>{const n=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");return(DATA.funding||[]).find(f=>n(f.company)===n(c))};
-function people(j){return((j.d&&j.d.people)||[]).filter(p=>p.role!=="HR"||true)}
-function firstName(p){const n=p&&p.name||"";return(!n||n.includes("@")||/^(founders?|hiring manager|recruiter)$/i.test(n))?"":n.split(/\s+/)[0]}
-function bestBullet(m){if(!m)return"";const bs=m.sections.flatMap(s=>s.lines.filter(l=>l.t==="b").map(l=>l.text));
-  const sc=t=>{const r=xyz(t);return r.x+r.y*2+r.z};return bs.sort((a,b)=>sc(b)-sc(a))[0]||""}
-function currentRole(m){const h=m&&m.sections.flatMap(s=>s.lines).find(l=>l.t==="h");if(!h)return null;const p=h.text.split(/\s+\|\s+/);return{role:p[0].replace(/\s*\(.*\)/,""),co:(p[1]||"").split(",")[0]}}
-const lowerFirst=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
-function draftFor(j){const all=store.get("radar_drafts",{}),k=j.id+(T.follow?"f":"");if(all[k])return all[k];
-  const p=people(j)[T.person],m=baseCV()||getCV(j.id),f=fundFor(j.company),kw=jdKeywords(jdOf(j)),cr=currentRole(m),bb=bestBullet(m),fn=firstName(p);
-  const e=store.get("radar_emailed",{})[j.id];
-  if(T.follow)return{to:e?.to||p?.email||"",subject:"Re: "+(e?.subject||j.title+" role"),hi:`Hi ${fn||"there"},`,
-    hook:`Following up on my note about the ${j.title} role.`,proof:"Since then, [one new thing: a small idea, a teardown, or a result].",value:"",ask:"Worth a quick chat this week?",
-    sign:`Thanks,\n${(m&&m.name)||"[Your name]"}`};
-  return{to:p?.email||"",subject:`${j.title} at ${j.company}`,hi:`Hi ${fn||"there"},`,
-    hook:f?`Congrats on the ${[f.amount,f.round].filter(Boolean).join(" ")}. Saw you're hiring a ${j.title} and wanted to write to you directly.`
-      :`Saw ${j.company} is hiring a ${j.title} and wanted to write to you directly.`,
-    proof:cr&&bb?`I'm a ${cr.role}${cr.co?" at "+cr.co:""}. Recently I ${lowerFirst(bb.replace(/\.$/,""))}.`:"[One result you're proud of, with a number.]",
-    value:`One idea for ${j.company}: [a specific thing you'd do in month one${kw[0]?" around "+kw[0]:""}].`,
-    ask:"Open to a 15-minute call this week?",sign:`Thanks,\n${(m&&m.name)||"[Your name]"}${m&&m.contact?"\n"+m.contact:""}`}}
-function saveDraft(j,d){const all=store.get("radar_drafts",{});all[j.id+(T.follow?"f":"")]=d;store.set("radar_drafts",all)}
-function readDraft(){const d={};document.querySelectorAll("[data-f]").forEach(el=>d[el.dataset.f]=el.value);return d}
-const mailBody=d=>[d.hi,"",d.hook,d.proof,d.value,"",d.ask,"",d.sign].filter((x,i,a)=>x!==""||a[i-1]!=="").join("\n").replace(/\n{3,}/g,"\n\n").trim();
-const words=t=>(t.match(/[A-Za-z0-9'’]+/g)||[]).length;
-function mailChecks(d,j){const body=[d.hook,d.proof,d.value,d.ask].join(" "),low=(body+" "+d.subject).toLowerCase(),n=words(body),q=(body.match(/\?/g)||[]).length;
-  const tmpl=TEMPLATED.filter(t=>low.includes(t)),h=humanScore(body+" "+d.subject);
-  return[[n<=120,`${n} words${n<=120?". Short enough to read on a phone.":". Cut to under 120."}`],
-    [q===1,q===1?"One clear ask.":q?`${q} questions. Keep one ask.`:"Add one clear ask."],
-    [!tmpl.length,tmpl.length?`Sounds templated: "${tmpl[0]}".`:"No template phrases."],
-    [!/^hi there,?$/i.test(d.hi.trim()),/^hi there/i.test(d.hi.trim())?"Use their first name.":"Uses their name."],
-    [new RegExp(reEsc(j.company),"i").test(body),new RegExp(reEsc(j.company),"i").test(body)?"Mentions their company.":"Mention their company once."],
-    [!/\[[^\]]+\]/.test(body+d.sign),/\[[^\]]+\]/.test(body+d.sign)?"Fill in the [brackets].":"No blanks left."],
-    [words(d.subject)<=8&&words(d.subject)>0,words(d.subject)<=8?"Subject is short.":"Shorten the subject."],
-    [h.score>=80,h.hits.length?`Buzzwords: ${h.hits.join(", ")}.`:"Sounds like a person."]]}
-function mailStudio(j){const d=draftFor(j),ppl=people(j),f=fundFor(j.company),c=(j.d&&j.d.company)||{},kw=jdKeywords(jdOf(j)).slice(0,4),bb=bestBullet(baseCV()||getCV(j.id));
-  const chk=mailChecks(d,j),ok=chk.filter(x=>x[0]).length;const e=store.get("radar_emailed",{})[j.id];
-  const facts=[j.title,j.company,f&&[f.amount,f.round].filter(Boolean).join(" "),f&&"raised "+(f.amount||"funding"),c.team_size&&c.team_size+" people",c.batch&&"YC "+c.batch,...kw,bb&&bb.slice(0,80)].filter(Boolean);
-  return`<div class="st-bar glass"><div class="st-t"><b>${T.follow?"Follow-up":"Email"} for ${esc(j.title)}</b><span>${esc(j.company)}. Drafts save as you type.</span></div>
-    <div class="st-stats" id="st-stats"><div class="stat">${ring(Math.round(ok/chk.length*100))}<span><b>${ok} of ${chk.length}</b>checks pass</span></div></div>
-    <div class="st-act"><button class="btn glass" data-st="mclaude">Ask Claude</button><button class="btn glass" data-st="copy">Copy</button>
-      <button class="btn glass" data-st="gmail">Open in Gmail</button><button class="btn primary" data-st="sent">${e&&!T.follow?"✓ Emailed":"Mark as Emailed"}</button>
-      <button class="x" data-st="close" aria-label="Close">✕</button></div></div>
-  <div class="st-body"><aside class="st-col glass"><div class="st-h">Sending To</div><div>${ppl.map((p,i)=>`<button class="who" data-st="who" data-i="${i}" aria-pressed="${i===T.person}">
-      <span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${esc(initials(p.name))}</span><span>${esc(p.name)}<small>${esc(p.role)}${p.need!=null?`, worth emailing ${p.need}%`:""}</small></span></button>`).join("")||'<p class="muted">No people found for this job. Type the address below.</p>'}</div>
-    <div class="st-h">Tap to Use</div><div class="fchips">${facts.map(x=>`<button class="fchip" data-st="fact" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div>
-    ${e?`<div class="fu">Emailed <b>${new Date(e.at).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</b>.${T.follow?"":`<button data-st="follow">Write Follow-up</button>`}</div>`:""}</aside>
-    <div class="st-mid"><div class="mail glass">
-      <div class="mrow2"><label for="m-to">To</label><input id="m-to" data-f="to" value="${esc(d.to)}" placeholder="name@company.com" autocomplete="off"></div>
-      <div class="mrow2"><label for="m-su">Subject</label><input id="m-su" data-f="subject" value="${esc(d.subject)}"></div>
-      ${[["hi","Greeting"],["hook","Hook: why them, why now"],["proof","Proof: one real result"],["value","Value: what you'd do for them"],["ask","Ask: one small step"],["sign","Sign-off"]].map(([k,l])=>
-        `<div class="blk"><label for="b-${k}">${l}</label><textarea id="b-${k}" data-f="${k}" rows="1">${esc(d[k])}</textarea></div>`).join("")}
-    </div></div>
-    <aside class="st-col glass st-r"><div class="st-h">Email Health</div><div id="m-chk">${chk.map(([g,t])=>`<div class="chk"><span class="ri ${g?"ok":"gap"}">${g?"✓":"!"}</span><span>${esc(t)}</span></div>`).join("")}</div>
-      <div class="st-h">Tips</div><div class="muted"><p>Founders read short emails. Three to five sentences wins.</p><p style="margin-top:8px">Send between 8 and 10 AM their time, Tuesday to Thursday.</p>
-      <p style="margin-top:8px">No reply in 4 days? Send one follow-up. This page reminds you.</p></div></aside></div>`}
-function grow(t){t.style.height="auto";t.style.height=t.scrollHeight+"px"}
-function mailEdited(){const j=job(),d=readDraft();saveDraft(j,d);const chk=mailChecks(d,j),ok=chk.filter(x=>x[0]).length;
-  $("m-chk").innerHTML=chk.map(([g,t])=>`<div class="chk"><span class="ri ${g?"ok":"gap"}">${g?"✓":"!"}</span><span>${esc(t)}</span></div>`).join("");
-  $("st-stats").innerHTML=`<div class="stat">${ring(Math.round(ok/chk.length*100))}<span><b>${ok} of ${chk.length}</b>checks pass</span></div>`}
-function emailedNote(j){const e=store.get("radar_emailed",{})[j.id];if(!e)return"";const days=Math.floor((Date.now()-e.at)/864e5);
-  return`<p class="note">Emailed ${esc(e.name||e.to||"them")} ${days?days+(days===1?" day":" days")+" ago":"today"}.${days>=4?` <button class="more" style="margin:0" data-compose="${j.id}" data-follow="1">Write Follow-up</button>`:` Follow up in ${4-days} ${4-days===1?"day":"days"} if no reply.`}</p>`}
-
+function askClaude(t){copyText(t).then(ok=>toast(ok?"Copied. Open Claude (⌥C) and press ⌘V.":"Couldn't copy. Allow clipboard for this site."))}
 /* ---- events ---- */
 document.addEventListener("click",e=>{
-  const op=e.target.closest("[data-tailor],[data-compose]");
-  if(op){e.stopPropagation();if(op.dataset.tailor)openStudio("cv",op.dataset.tailor);else{openStudio("mail",op.dataset.compose,op.dataset.person?Number(op.dataset.person):0);
-    if(op.dataset.follow){T.follow=true;drawStudio()}}return}
+  const op=e.target.closest("[data-tailor]");
+  if(op){e.stopPropagation();openStudio("cv",op.dataset.tailor);return}
   const b=e.target.closest("[data-st]");if(!b||!T.mode)return;const j=job(),a=b.dataset.st;
   if(a==="close")return closeStudio();
   if(a==="import"){const t=$("cv-in").value.trim();if(!t)return toast("Paste your CV first.");const m=textToCV(t);store.set("radar_cv",m);putCV(j.id,clone(m));drawStudio();return toast("Saved as your CV.")}
   if(a==="raw"){if(T.raw){putCV(j.id,textToCV($("rawcv").value))}T.raw=!T.raw;return drawStudio()}
-  if(a==="claude"){if(T.raw)putCV(j.id,textToCV($("rawcv").value));return copyText(cvAskClaude(j)).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
+  if(a==="claude"){if(T.raw)putCV(j.id,textToCV($("rawcv").value));return askClaude(cvAskClaude(j))}
   if(a==="pdf"){if(T.raw)putCV(j.id,textToCV($("rawcv").value));return exportPDF(j)}
   if(a==="savebase"){store.set("radar_cv",clone(getCV(j.id)));return toast("Saved as your main CV.")}
   if(a==="reset"){const all=jobCVs();delete all[j.id];store.set("radar_cvjobs",all);drawStudio();return toast("Back to your main CV.")}
   if(a==="up"){const m=getCV(j.id),s=m.sections[b.dataset.si],[x]=s.lines.splice(Number(b.dataset.li),1);s.lines.splice(Number(b.dataset.to),0,x);putCV(j.id,m);return drawStudio()}
   if(a==="marks"){T.marks=!T.marks;return drawStudio()}
   if(a==="spare"){const m=getCV(j.id),ei=m.sections.findIndex(x=>x.title==="Experience");m.sections.splice(ei+1,0,clone(SPARE[0]));putCV(j.id,m);drawStudio();return toast("Added. Remove lines you don't need.")}
-  if(a==="askline"){const m=getCV(j.id),line=m.sections[b.dataset.si].lines[b.dataset.li].text,an=analyse(j,m),v=verdict(line,an);
-    return copyText(`Rewrite this one CV line for the ${j.title} role at ${j.company}.
-Problem: ${v[1]}. ${v[2]}
-Rules: use only facts that are true for me (from my CV below). Never invent numbers. Format: "Accomplished X, measured by Y, by doing Z". Use the job's words only where true. One line, under 30 words, no long dashes, no buzzwords. If a real number is missing, ask me for it instead of guessing. Give 2 options.
-
-LINE: ${line}
-
-JOB KEYWORDS: ${an.kws.join(", ")}
-
-MY CV:
-${cvToText(m)}`).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
+  if(a==="askline"){const m=getCV(j.id),line=m.sections[b.dataset.si].lines[b.dataset.li].text,v=verdict(line,analyse(j,m));
+    return askClaude(`Rewrite this CV line for the ${j.title} job at ${j.company}: "${line}"
+Problem: ${v[2]}
+2 options, under 25 words each. Use only facts from my CV on this page, put [X] where I need a real number. No long dashes. Short answer.`)}
   if(a==="addb"){const m=getCV(j.id),s=m.sections[b.dataset.si];s.lines.push({t:"b",text:""});putCV(j.id,m);drawStudio();
     const els=document.querySelectorAll(`[data-p^="${b.dataset.si}."]`);els[els.length-1]?.focus();return}
-  if(a==="who"){T.person=Number(b.dataset.i);const d=readDraft(),p=people(j)[T.person],fn=firstName(p);d.hi=`Hi ${fn||"there"},`;if(p.email)d.to=p.email;saveDraft(j,d);return drawStudio()}
-  if(a==="fact"){const t=T.focus&&document.body.contains(T.focus)?T.focus:$("b-value");const s=t.selectionStart??t.value.length,v=b.dataset.v;
-    t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd??s);t.focus();t.selectionStart=t.selectionEnd=s+v.length;if(t.tagName==="TEXTAREA")grow(t);return mailEdited()}
-  if(a==="follow"){T.follow=true;return drawStudio()}
-  const d=readDraft();
-  if(a==="copy")return copyText(mailBody(d)).then(ok=>toast(ok?"Email copied.":"Couldn't copy."));
-  if(a==="mclaude")return copyText(`Improve this cold email to ${(people(j)[T.person]||{}).name||"them"} at ${j.company} about the ${j.title} role (${j.url}).
-Rules: under 120 words, one ask, sounds like me, no clichés or buzzwords. Use only facts from my CV. Fill the [brackets] with something specific about ${j.company}, or ask me.
 
-SUBJECT: ${d.subject}
-
-${mailBody(d)}
-
-MY CV:
-${cvToText(baseCV()||getCV(j.id))}`).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."));
-  if(a==="gmail"){window.open("https://mail.google.com/mail/?view=cm&fs=1&"+new URLSearchParams({to:d.to||"",su:d.subject||"",body:mailBody(d)}),"_blank","noopener");return}
-  if(a==="sent"){const all=store.get("radar_emailed",{}),p=people(j)[T.person];all[j.id]={at:Date.now(),to:d.to,name:(p&&firstName(p))?p.name:d.to,subject:d.subject};
-    store.set("radar_emailed",all);toast("Marked as emailed. Follow-up reminder in 4 days.");return drawStudio()}
 });
 document.addEventListener("input",e=>{if(!T.mode)return;const t=e.target;
   if(t.id==="jd-in"){const all=store.get("radar_jd",{});all[T.id]=t.value;store.set("radar_jd",all);clearTimeout(saveT);saveT=setTimeout(()=>{const j=job(),m=getCV(j.id),a=analyse(j,m);
     $("st-stats").innerHTML=cvStats(a);$("st-right").innerHTML=cvRight(j,m,a);$("paper").innerHTML=paperHTML(j,m,a)},500);return}
   if(t.isContentEditable&&t.dataset.p)return cvEdited(t);
-  if(t.dataset.f){if(t.tagName==="TEXTAREA")grow(t);mailEdited()}});
-document.addEventListener("focusin",e=>{if(T.mode==="mail"&&e.target.dataset&&e.target.dataset.f)T.focus=e.target});
+});
 document.addEventListener("focusout",e=>{const t=e.target;if(T.mode==="cv"&&t.isContentEditable&&t.dataset.p){const a=analyse(job(),getCV(T.id));t.innerHTML=hl(t.innerText.replace(/\n+/g," ").trim(),a.kws)}});
 document.addEventListener("paste",e=>{const t=e.target.closest&&e.target.closest("[contenteditable]");if(!t||!T.mode)return;e.preventDefault();
   document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text").replace(/\s*\n\s*/g," "))});
