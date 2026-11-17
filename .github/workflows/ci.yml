@@ -1,0 +1,27 @@
+name: Checks
+# Runs on every upload/push (not on the bot's own commits). A red X here means a file you uploaded is broken.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/jobs.json", "radar.db"]
+  pull_request: {}
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install --quiet pytest
+      - name: Compile every Python file
+        run: python -m py_compile *.py scrapers/*.py tests/*.py
+      - name: Check config.json is valid JSON
+        run: python -c "import json; json.load(open('config.json')); print('config.json OK')"
+      - name: Run tests
+        run: python -m pytest -q
