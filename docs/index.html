@@ -650,6 +650,7 @@ body.studio-open .studio{display:flex;animation:fadein .3s var(--spring)}
 .paper [contenteditable]:hover{background:rgba(0,122,255,.05)}
 .paper [contenteditable]:focus{background:rgba(0,122,255,.09)}
 .p-name{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.p-hl{font-size:14px;font-weight:600;margin-top:2px}
 .p-ct{color:#555;font-size:12px;margin:2px 0 6px}
 .p-sec{margin-top:16px}
 .p-st{font-size:12px;font-weight:700;letter-spacing:.03em;border-bottom:1px solid #c7c7cc;padding-bottom:3px;margin-bottom:6px}
@@ -661,7 +662,15 @@ body.studio-open .studio{display:flex;animation:fadein .3s var(--spring)}
 .xyz{flex:none;display:flex;gap:3px;margin-top:6px}
 .xyz i{width:6px;height:6px;border-radius:50%;background:#d1d1d6}
 .xyz i.on{background:#0a7cff}
-.p-hint{font-size:11px;color:#8e8e93;margin:0 0 4px 18px}
+.p-line{border-radius:6px;margin:2px -8px;padding:1px 8px;transition:background .2s}
+.p-line.v-fix{background:rgba(255,59,48,.08)}.p-line.v-change{background:rgba(255,204,0,.16)}.p-line.v-modify{background:rgba(0,122,255,.07)}.p-line.v-move{background:rgba(142,142,147,.12)}
+.p-tag{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 5px 18px;font-size:11px;color:#6e6e73}
+.p-tag:empty{display:none}
+.tg{font-weight:600;border-radius:5px;padding:1px 6px;font-size:10.5px}
+.tg-fix{background:rgba(255,59,48,.14);color:#c0261c}.tg-change{background:rgba(255,204,0,.32);color:#6b5300}.tg-modify{background:rgba(0,122,255,.12);color:#0057b8}
+.tg-move{background:rgba(142,142,147,.2);color:#48484a}.tg-keep{background:none;color:#248a3d;padding:0}
+.tq{font-size:10.5px;font-weight:600;color:#0a7cff;margin-left:auto}
+.p-line:not(.v-off) .p-tag .tq{opacity:.75}.p-line:hover .p-tag .tq{opacity:1}
 .paper mark{background:rgba(0,122,255,.14);color:inherit;border-radius:3px;padding:0 1px}
 .addb{font-size:11px;color:#0a7cff;margin:2px 0 0 18px;opacity:0;transition:opacity .2s}
 .p-sec:hover .addb,.addb:focus{opacity:1}
@@ -710,7 +719,10 @@ body.studio-open .studio{display:flex;animation:fadein .3s var(--spring)}
 <div class="studio" id="studio" role="dialog" aria-modal="true" aria-label="Studio"></div>
 <script>
 /* ---------- CV Tailor + Cold Email ---------- */
-const DEFAULT_CV=null; // filled once Arpit shares his CV
+const CV_VERSION=1;
+const DEFAULT_CV={"name": "Andrew Arpit Rawat", "headline": "Growth Marketing & AI-Driven Automation", "contact": "Gurugram, Haryana | 8769565575 | rarpit2209@gmail.com | linkedin.com/in/andrew-arpit-rawat", "sections": [{"title": "Profile", "lines": [{"t": "p", "text": "Growth marketer who builds the AI tools he uses. At QuickReply.ai, drives SEO, performance marketing, and outbound simultaneously while shipping working automation — backlink checkers, exam-prep engines — vibe-coded end-to-end with Claude, with no formal software background. Comfortable owning ambiguous, cross-functional problems and moving from prompt to shipped tool without a playbook."}]}, {"title": "Experience", "lines": [{"t": "h", "text": "Marketing Associate | QuickReply.ai, Gurugram | Nov 2025 – Present"}, {"t": "p", "text": "Joined as Marketing Intern in Nov 2025; promoted to Marketing Associate in Feb 2026."}, {"t": "b", "text": "Built an AI-powered backlink-checking tool end-to-end using Claude Code and shipped it into the SEO workflow — zero prior coding background."}, {"t": "b", "text": "Designed and vibe-coded an exam-prep tool that ingests previous years' question papers (PYQs) and auto-generates MCQ practice sets ranked by frequency and importance."}, {"t": "b", "text": "Ran backlink outreach and secured 200+ high-quality backlinks."}, {"t": "b", "text": "Planned and executed 2 cold email outbound campaigns, generating 60+ qualified leads."}, {"t": "b", "text": "Learned and applied Google Ads fundamentals — Smart Bidding, RSA structuring, keyword research across 9 countries."}, {"t": "b", "text": "Scoped and shortlisted industry events for company participation and brand visibility."}, {"t": "b", "text": "Audited and updated schema markup site-wide to strengthen technical SEO."}, {"t": "b", "text": "Led an AEO/GEO push — long-form, high-intent blog content written to raise AI citation visibility (ChatGPT, Perplexity, Google AI Overviews)."}, {"t": "b", "text": "Produced long-form blog content using ChatGPT and Claude as primary research and drafting tools."}, {"t": "h", "text": "Freelance Lead Generation | Beekin.co, Remote | 2025"}, {"t": "b", "text": "Sourced and enriched prospect data, generating qualified leads using Apollo.io."}, {"t": "b", "text": "Ran the full lead-gen workflow — sourcing, scraping, enrichment, list-building — orchestrated end-to-end through Claude."}, {"t": "h", "text": "Internship Trainee | Nestlé India (Ponda Plant), Goa | Jan 2025 – Jun 2025"}, {"t": "b", "text": "Interned across ML1, ML2, and Kitchen Line 1 & 2, learning production and quality-control processes for KitKat, Milkybar, and BarOne."}, {"t": "b", "text": "Worked in the P2 New Product Development area, reducing process variation on wafer weight, layer weight, and book size/weight."}, {"t": "b", "text": "Developed a healthy cheesecake as an NPD project — using fresh cream, yoghurt, and condensed milk — optimizing texture, flavor, and nutritional value."}, {"t": "b", "text": "Won highest sales for the New Product Development & Marketing track at Deeksharambh, a college-wide student week programme."}, {"t": "h", "text": "Consultant Facilitator (Part-time) | Antarang Foundation, Udaipur | Aug 2023 – Apr 2024"}, {"t": "b", "text": "Worked with government school students (classes 9–12) on skill and aptitude assessment, helping each identify and choose a career path suited to their strengths."}]}, {"title": "Skills", "lines": [{"t": "p", "text": "AI & Automation: Claude Code, ChatGPT, prompt engineering, vibe-coded tools & workflows, LLM-assisted content pipelines"}, {"t": "p", "text": "Performance Marketing: Google Ads (Smart Bidding, RSA), keyword research, campaign strategy"}, {"t": "p", "text": "SEO & Content: Backlink building, technical SEO (schema), AEO/GEO optimization, long-form content"}, {"t": "p", "text": "Outbound & Lead Gen: Cold email outbound, Apollo.io, Smartlead, lead sourcing & enrichment"}, {"t": "p", "text": "Tools: HubSpot, n8n, Apify, Ahrefs, Semrush"}]}, {"title": "Education", "lines": [{"t": "h", "text": "B.Tech, Dairy Technology | Maharana Pratap University of Agriculture and Technology, Udaipur | 2021 – 2025"}, {"t": "p", "text": "CGPA 6.2"}, {"t": "h", "text": "Senior Secondary | St. Anselm's Sr. Sec. School, Ajmer"}, {"t": "p", "text": "75.2%"}, {"t": "h", "text": "Matriculation | St. Anselm's Sr. Sec. School, Ajmer"}, {"t": "p", "text": "71.4%"}]}]};
+const SPARE=[{"title": "Other Internships", "lines": [{"t": "h", "text": "Summer Intern | Saras Dairy (BMC Gogunda), Udaipur | Jun 2023 – Aug 2023"}, {"t": "h", "text": "Internship Trainee | NIFTEM-K, Sonipat | Feb 2023 – Mar 2023"}, {"t": "b", "text": "Completed a 15-day internship on food technology, business strategy, and product development."}, {"t": "h", "text": "Internship Trainee | Krishi Vigyan Kendra, Bhilwara | Jun 2022 – Jul 2022"}]}];
+(function(){if(store.get("radar_cv_v",0)<CV_VERSION){store.set("radar_cv",DEFAULT_CV);store.set("radar_cvjobs",{});store.set("radar_cv_v",CV_VERSION)}})();
 const KW=["SEO","SEM","content marketing","copywriting","email marketing","lifecycle","CRM","HubSpot","Salesforce","Google Analytics","GA4","Mixpanel","Amplitude",
  "SQL","Excel","Google Sheets","Python","JavaScript","APIs","A/B testing","experimentation","paid ads","performance marketing","Meta Ads","Google Ads","LinkedIn",
  "social media","growth","funnel","conversion","retention","activation","onboarding","product marketing","positioning","messaging","go-to-market","GTM","outbound",
@@ -718,7 +730,7 @@ const KW=["SEO","SEM","content marketing","copywriting","email marketing","lifec
  "n8n","Clay","Apollo","Notion","Figma","Canva","Webflow","WordPress","campaigns","community","partnerships","events","PR","brand","research","customer interviews",
  "user research","stakeholders","cross-functional","AI","LLM","prompt engineering","sales","customer success","solutions","demos","technical","writing","storytelling",
  "metrics","KPIs","OKRs","operations","project management","strategy","market research","competitive analysis","newsletter","landing pages","CAC","LTV","ROI","CTR",
- "revenue","startup","founder","video","YouTube","Instagram","Reddit","influencer","affiliate","referral","pricing","presentations","data analysis","ownership"];
+ "revenue","startup","founder","backlinks","cold email","outreach","keyword research","technical SEO","AEO","GEO","Ahrefs","Semrush","Smartlead","Apify","Claude","ChatGPT","blog","leads","lead gen","NPD","product development","FMCG","food","video","YouTube","Instagram","Reddit","influencer","affiliate","referral","pricing","presentations","data analysis","ownership"];
 const AIWORDS=["spearheaded","leveraged","leveraging","synergy","synergies","utilize","utilized","delve","passionate","results-driven","dynamic","seamless","seamlessly","robust",
  "cutting-edge","innovative","orchestrated","fostered","pivotal","tapestry","meticulous","adept","proven track record","go-getter","detail-oriented","team player",
  "in today's","game-changer","best-in-class","thought leader","hardworking","self-starter","ever-evolving","landscape","holistic","streamlined","empowered"];
@@ -727,7 +739,7 @@ const TEMPLATED=["hope this email finds you","hope you are doing well","hope you
 const VERBS=new Set("built led ran grew cut won made wrote drove set sold taught brought found took got gave kept put rose hit shipped began chose drew held lent met paid sent spent spoke stood told understood".split(" "));
 const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 const kwRe=k=>new RegExp("(^|[^A-Za-z0-9])"+reEsc(k)+"(?![A-Za-z0-9])","i");
-const T={mode:null,id:null,raw:false,person:0,focus:null,follow:false};
+const T={mode:null,id:null,raw:false,person:0,focus:null,follow:false,marks:true};
 
 /* ---- CV model: {name,contact,sections:[{title,lines:[{t:'p'|'h'|'b',text}]}]} ---- */
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -735,13 +747,15 @@ function baseCV(){return store.get("radar_cv",DEFAULT_CV)}
 function jobCVs(){return store.get("radar_cvjobs",{})}
 function getCV(id){return jobCVs()[id]||(baseCV()?clone(baseCV()):null)}
 function putCV(id,m){const all=jobCVs();all[id]=m;store.set("radar_cvjobs",all)}
-function cvToText(m){if(!m)return"";let o=[m.name,m.contact];for(const s of m.sections){o.push("","# "+s.title);
+function cvToText(m){if(!m)return"";let o=[m.name,...(m.headline?[m.headline]:[]),m.contact];for(const s of m.sections){o.push("","# "+s.title);
   for(const l of s.lines)o.push(l.t==="b"?"- "+l.text:l.t==="h"?"## "+l.text:l.text)}return o.join("\n").trim()}
 function textToCV(t){const L=t.replace(/\r/g,"").split("\n").map(x=>x.trim());
   const HEAD=/^(summary|profile|about|objective|experience|work experience|professional experience|internships?|education|skills|technical skills|projects|certifications?|achievements|awards|leadership|activities|volunteering|languages|interests|positions of responsibility)$/i;
   const lines=L.filter(Boolean),m={name:"",contact:"",sections:[]};let cur=null,i=0;
   if(lines[0]&&!lines[0].startsWith("#")){m.name=lines[0];i=1}
-  if(lines[i]&&!lines[i].startsWith("#")&&!HEAD.test(lines[i])&&/[@|·•]|\d{5}|linkedin|http/i.test(lines[i])){m.contact=lines[i];i++}
+  const isCt=x=>x&&!x.startsWith("#")&&!HEAD.test(x)&&/[@|·•]|\d{5}|linkedin|http/i.test(x);
+  if(!isCt(lines[i])&&isCt(lines[i+1])&&lines[i]&&!lines[i].startsWith("#")&&!HEAD.test(lines[i])){m.headline=lines[i];i++}
+  if(isCt(lines[i])){m.contact=lines[i];i++}
   for(;i<lines.length;i++){let x=lines[i];
     if(x.startsWith("## ")){(cur||(cur=add("Experience"))).lines.push({t:"h",text:x.slice(3).trim()});continue}
     if(x.startsWith("# ")||HEAD.test(x.replace(/:$/,""))||(/^[A-Z][A-Z &/]{3,}$/.test(x)&&x.length<40)){cur=add(x.replace(/^#\s*/,"").replace(/:$/,""));continue}
@@ -751,7 +765,7 @@ function textToCV(t){const L=t.replace(/\r/g,"").split("\n").map(x=>x.trim());
     cur.lines.push({t:(/\|/.test(x)||(/^[-•*–▪●]/.test(next)&&x.length<110&&!prevB&&!/[.]$/.test(x)))?"h":"p",text:x})}
   function add(title){const s={title:title.charAt(0).toUpperCase()+title.slice(1).toLowerCase(),lines:[]};m.sections.push(s);return s}
   return m}
-function cvPlain(m){return m?[m.name,m.contact,...m.sections.flatMap(s=>[s.title,...s.lines.map(l=>l.text)])].join("\n"):""}
+function cvPlain(m){return m?[m.name,m.headline||"",m.contact,...m.sections.flatMap(s=>[s.title,...s.lines.map(l=>l.text)])].join("\n"):""}
 
 /* ---- analysis ---- */
 function jdOf(j){return(j.d&&j.d.description)||store.get("radar_jd",{})[j.id]||""}
@@ -769,6 +783,23 @@ function reqStatus(req,cvtxt){const low=cvtxt.toLowerCase();
   return[cov>=.6?"ok":cov>=.25?"part":"gap",miss]}
 function xyz(text){const w=(text.trim().split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z]/g,"");
   return{x:/ed$/.test(w)||VERBS.has(w),y:/(?<![A-Za-z])\d|%|₹|\$|\bdoubled?\b|\btripled?\b|\bhalf\b/i.test(text),z:/\b(by|through|using|via|with|after|across|leveraging)\b/i.test(text)}}
+const FAM=[["email marketing","lifecycle","cold email","outreach","outbound","newsletter","CRM","HubSpot"],
+  ["content marketing","blog","SEO","technical SEO","AEO","GEO","copywriting","writing","landing pages","backlinks","Ahrefs","Semrush","keyword research"],
+  ["paid ads","Google Ads","performance marketing","Meta Ads","SEM","CTR","conversion","campaigns","ROI","CAC"],
+  ["analytics","dashboards","SQL","Google Analytics","GA4","metrics","A/B testing","experimentation","Excel","data analysis","KPIs"],
+  ["lead generation","leads","lead gen","pipeline","Apollo","Smartlead","demand generation","B2B","sales","outbound","Clay"],
+  ["AI","LLM","automation","Claude","ChatGPT","n8n","Zapier","Apify","prompt engineering","APIs","technical"],
+  ["NPD","product development","FMCG","food","research","market research"]];
+function verdict(text,a){const r=xyz(text),low=text.toLowerCase(),ai=AIWORDS.filter(w=>low.includes(w));
+  const their=a.kws.filter(k=>kwRe(k).test(text)),mine=KW.filter(k=>kwRe(k).test(text));
+  if(ai.length||/—/.test(text))return["fix","Fix wording",ai.length?`Swap "${ai[0]}" for a plain verb.`:"Swap the long dash (—) for a comma or full stop. Reads less like AI."];
+  if(!a.kws.length)return["keep","Keep",""];
+  if(!their.length&&!mine.length)return["move","Move down or cut","Not related to this job. Move it lower or drop it."];
+  if(!r.y)return["change","Change","Add a number: how many, how much, or how fast."];
+  if(!their.length){const fam=FAM.filter(f=>f.some(k=>mine.includes(k))).flat();
+    const miss=[...new Set(a.kws.filter(k=>!a.found.includes(k)&&fam.includes(k)))].slice(0,2);
+    if(miss.length)return["modify","Modify",`Close to what they want. Use their words if true: ${miss.join(", ")}.`]}
+  return["keep","Keep",""]}
 function xyzHint(r){return!r.x?"Start with what you did: Built, Grew, Launched.":!r.y?"Add a number: how many, how much, how fast.":!r.z?"Say how: by doing what, using what.":""}
 function humanScore(text){const low=text.toLowerCase(),hits=AIWORDS.filter(w=>low.includes(w));
   const dashes=(text.match(/—/g)||[]).length;return{score:Math.max(5,100-hits.length*12-Math.max(0,dashes-1)*5),hits,dashes}}
@@ -795,7 +826,7 @@ function drawStudio(){const j=job();if(!j)return closeStudio();$("studio").inner
 function cvStudio(j){const m=getCV(j.id),a=analyse(j,m);
   return`<div class="st-bar glass"><div class="st-t"><b>Tailor CV for ${esc(j.title)}</b><span>${esc(j.company)}. Edits save for this job only.</span></div>
     <div class="st-stats" id="st-stats">${cvStats(a)}</div>
-    <div class="st-act">${m?`<button class="btn glass" data-st="raw">${T.raw?"Done Editing Text":"Edit as Text"}</button>
+    <div class="st-act">${m&&!T.raw?`<button class="btn glass" data-st="marks">${T.marks?"Hide Marks":"Show Marks"}</button>`:""}${m?`<button class="btn glass" data-st="raw">${T.raw?"Done Editing Text":"Edit as Text"}</button>
       <button class="btn glass" data-st="claude">Ask Claude</button><button class="btn primary" data-st="pdf">Export PDF</button>`:""}
       <button class="x" data-st="close" aria-label="Close">✕</button></div></div>
   <div class="st-body"><aside class="st-col glass" id="st-left">${cvLeft(j,a)}</aside>
@@ -803,6 +834,7 @@ function cvStudio(j){const m=getCV(j.id),a=analyse(j,m);
     <aside class="st-col glass st-r" id="st-right">${cvRight(j,m,a)}</aside></div>`}
 function cvStats(a){return`<div class="stat">${ring(a.match)}<span><b>${a.match}%</b>keyword match</span></div>
   <div class="stat"><span><b>${a.full} of ${a.bullets.length}</b>XYZ bullets</span></div>
+  <div class="stat"><span><b>${a.bullets.filter(b=>verdict(b.text,a)[0]!=="keep").length}</b>lines to fix</span></div>
   <div class="stat"><span><b>${a.human.score}%</b>sounds human</span></div>`}
 function cvLeft(j,a){
   if(!a.jd)return`<div class="st-h">Job Description</div><p class="muted" style="margin-bottom:10px">This job page couldn't be read. Paste the description to get suggestions.</p>
@@ -814,7 +846,7 @@ function cvLeft(j,a){
       <p class="flag">${a.human.hits.length?`Reads like AI: <b>${a.human.hits.map(esc).join(", ")}</b>. Swap for plain verbs.`:"No buzzwords found. Good."}${a.human.dashes>1?" Fewer long dashes.":""}</p></div>`}
 function cvRight(j,m,a){if(!m)return`<div class="st-h">How This Works</div><p class="muted">Paste your CV once. Each job gets its own copy, so edits here never touch your main CV unless you choose Save as My CV.</p>`;
   const s=[];
-  for(const b of a.bullets){const r=xyz(b.text),h=xyzHint(r);if(h&&s.length<4)s.push(`<div class="sug"><b>${!r.y?"Missing Y (number)":!r.x?"Missing X (result)":"Missing Z (how)"}</b><q>${esc(b.text.slice(0,70))}${b.text.length>70?"…":""}</q><br>${h}</div>`)}
+  // per-line fixes are shown on the CV itself
   const miss=a.kws.filter(k=>!a.found.includes(k)).slice(0,4);
   if(miss.length)s.push(`<div class="sug"><b>Their words you don't use</b>${miss.map(esc).join(", ")}. Add one only where it's true for your work.</div>`);
   // move up: strongest bullet per role first
@@ -824,6 +856,8 @@ function cvRight(j,m,a){if(!m)return`<div class="st-h">How This Works</div><p cl
       const first=a.kws.filter(w=>kwRe(w).test(sec.lines[g0].text)).length;
       if(best!==g0&&bs>first&&s.length<8)s.push(`<div class="sug"><b>Move up</b><q>${esc(sec.lines[best].text.slice(0,70))}…</q> matches this job best.<br><button class="pill-btn" data-st="up" data-si="${si}" data-li="${best}" data-to="${g0}">Move to Top</button></div>`)}});
   for(const[r,st]of a.reqs)if(st==="gap"&&s.length<10)s.push(`<div class="sug"><b>Gap</b>${esc(r.slice(0,90))}${r.length>90?"…":""}. Leave it, or mention a real project that comes close.</div>`);
+  const FOODY=/\b(food|dairy|fmcg|cpg|nutrition|nutraceutical|beverage|agri|manufactur|quality|consumer goods|r&d|npd)\b/i;
+  if(FOODY.test(a.jd)&&!m.sections.some(x=>x.title==="Other Internships"))s.unshift(`<div class="sug"><b>Related experience</b>This job fits your food and dairy background. Add Saras Dairy, NIFTEM-K and KVK internships?<br><button class="pill-btn" data-st="spare">Add to CV</button></div>`);
   return`<div class="st-h">Suggestions</div>${s.join("")||'<p class="muted">Looks strong. Read it once out loud before sending.</p>'}
     <div class="st-h" style="margin-top:22px">Your CV</div><p class="muted">This copy is for ${esc(j.company)}.</p>
     <div class="actions" style="margin-top:10px"><button class="pill-btn" data-st="savebase">Save as My CV</button><button class="pill-btn" data-st="reset">Reset to My CV</button></div>`}
@@ -833,16 +867,20 @@ function paperHTML(j,m,a){
     <button class="btn primary" data-st="import">Use This CV</button></div>`;
   if(T.raw)return`<textarea class="rawcv" id="rawcv" spellcheck="true">${esc(cvToText(m))}</textarea>`;
   const ed=(path,text,cls,tag="div")=>`<${tag} class="${cls}" contenteditable="true" spellcheck="true" data-p="${path}">${hl(text,a.kws)}</${tag}>`;
-  return ed("name",m.name,"p-name")+ed("contact",m.contact,"p-ct")+m.sections.map((s,si)=>`<div class="p-sec">${ed(si+".t",s.title,"p-st")}
+  return ed("name",m.name,"p-name")+(m.headline!=null?ed("headline",m.headline,"p-hl"):"")+ed("contact",m.contact,"p-ct")+m.sections.map((s,si)=>`<div class="p-sec">${ed(si+".t",s.title,"p-st")}
     ${s.lines.map((l,li)=>{const p=si+"."+li;if(l.t!=="b")return ed(p,l.text,l.t==="h"?"p-h":"p-p");const r=xyz(l.text),h=xyzHint(r);
-      return`<div class="p-b">${ed(p,l.text,"")}<span class="xyz" id="x-${si}-${li}" title="X result · Y number · Z how"><i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i></span></div>
-      <div class="p-hint" id="h-${si}-${li}">${h}</div>`}).join("")}
+      return`<div class="p-line v-${T.marks?verdict(l.text,a)[0]:"off"}" id="v-${si}-${li}"><div class="p-b">${ed(p,l.text,"")}<span class="xyz" id="x-${si}-${li}" title="X result · Y number · Z how"><i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i></span></div>
+      <div class="p-tag" id="h-${si}-${li}">${tagHTML(l.text,a,si,li)}</div></div>`}).join("")}
     <button class="addb" data-st="addb" data-si="${si}">+ Add bullet</button></div>`).join("")}
-function setPath(m,p,v){if(p==="name")m.name=v;else if(p==="contact")m.contact=v;else{const[si,li]=p.split(".");if(li==="t")m.sections[si].title=v;else m.sections[si].lines[li].text=v}}
+function tagHTML(text,a,si,li){if(!T.marks)return"";const[v,label,why]=verdict(text,a);
+  if(v==="keep")return`<span class="tg tg-keep">✓ Keep</span>`;
+  return`<span class="tg tg-${v}">${label}</span><span class="tw">${esc(why)}</span><button class="tq" data-st="askline" data-si="${si}" data-li="${li}">Ask Claude</button>`}
+function setPath(m,p,v){if(p==="name")m.name=v;else if(p==="headline")m.headline=v;else if(p==="contact")m.contact=v;else{const[si,li]=p.split(".");if(li==="t")m.sections[si].title=v;else m.sections[si].lines[li].text=v}}
 let saveT;
 function cvEdited(el){const j=job(),m=getCV(j.id);setPath(m,el.dataset.p,el.innerText.replace(/\n+/g," ").trim());putCV(j.id,m);
   const[si,li]=el.dataset.p.split(".");const x=$(`x-${si}-${li}`);
-  if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;$(`h-${si}-${li}`).textContent=xyzHint(r)}
+  if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;
+    const a0=analyse(j,m),t=m.sections[si].lines[li].text;$(`h-${si}-${li}`).innerHTML=tagHTML(t,a0,si,li);$(`v-${si}-${li}`).className="p-line v-"+(T.marks?verdict(t,a0)[0]:"off")}
   clearTimeout(saveT);saveT=setTimeout(()=>{const a=analyse(j,getCV(j.id));$("st-stats").innerHTML=cvStats(a);$("st-left").innerHTML=cvLeft(j,a);$("st-right").innerHTML=cvRight(j,getCV(j.id),a)},350)}
 function cvAskClaude(j){const m=getCV(j.id);return`Tailor my CV for this job.
 Rules: use only facts that are in my CV. Never invent numbers, tools or results. Rewrite each bullet as "Accomplished X, measured by Y, by doing Z". Use the job's own words only where they're true for me. Put the strongest bullet first under each role. Keep it to one page. No buzzwords (spearheaded, leveraged, passionate, results-driven). At the end, list the gaps honestly and ask me for any real numbers you need.
@@ -863,11 +901,11 @@ function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w
     return h+(open?"</ul>":"")}).join("");
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(m.name||"CV")} CV - ${esc(j.company)}</title><style>
   @page{size:A4;margin:14mm 16mm}*{box-sizing:border-box}body{font:10.5pt/1.4 Helvetica,Arial,sans-serif;color:#111;margin:0}
-  h1{font-size:20pt;margin:0;font-weight:700}.ct{color:#444;font-size:9.5pt;margin:3px 0 4px}
+  h1{font-size:20pt;margin:0;font-weight:700}.ct{color:#444;font-size:9.5pt;margin:3px 0 4px}.hl{font-size:11pt;font-weight:600;margin-top:2px}
   h2{font-size:10.5pt;margin:12px 0 5px;padding-bottom:2px;border-bottom:1px solid #999;letter-spacing:.03em}
   .h{display:flex;justify-content:space-between;gap:12px;margin-top:6px}.h span:last-child{color:#444;white-space:nowrap}
   p{margin:2px 0}ul{margin:2px 0 0 16px;padding:0}li{margin:1px 0}</style></head>
-  <body><h1>${esc(m.name)}</h1><div class="ct">${esc(m.contact)}</div>${body}<script>onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);w.document.close()}
+  <body><h1>${esc(m.name)}</h1>${m.headline?`<div class="hl">${esc(m.headline)}</div>`:""}<div class="ct">${esc(m.contact)}</div>${body}<script>onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);w.document.close()}
 
 /* ---- email studio ---- */
 const fundFor=c=>{const n=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");return(DATA.funding||[]).find(f=>n(f.company)===n(c))};
@@ -875,7 +913,7 @@ function people(j){return((j.d&&j.d.people)||[]).filter(p=>p.role!=="HR"||true)}
 function firstName(p){const n=p&&p.name||"";return(!n||n.includes("@")||/^(founders?|hiring manager|recruiter)$/i.test(n))?"":n.split(/\s+/)[0]}
 function bestBullet(m){if(!m)return"";const bs=m.sections.flatMap(s=>s.lines.filter(l=>l.t==="b").map(l=>l.text));
   const sc=t=>{const r=xyz(t);return r.x+r.y*2+r.z};return bs.sort((a,b)=>sc(b)-sc(a))[0]||""}
-function currentRole(m){const h=m&&m.sections.flatMap(s=>s.lines).find(l=>l.t==="h");if(!h)return null;const p=h.text.split(/\s+\|\s+|,\s+| at /);return{role:p[0],co:p[1]||""}}
+function currentRole(m){const h=m&&m.sections.flatMap(s=>s.lines).find(l=>l.t==="h");if(!h)return null;const p=h.text.split(/\s+\|\s+/);return{role:p[0].replace(/\s*\(.*\)/,""),co:(p[1]||"").split(",")[0]}}
 const lowerFirst=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
 function draftFor(j){const all=store.get("radar_drafts",{}),k=j.id+(T.follow?"f":"");if(all[k])return all[k];
   const p=people(j)[T.person],m=baseCV()||getCV(j.id),f=fundFor(j.company),kw=jdKeywords(jdOf(j)),cr=currentRole(m),bb=bestBullet(m),fn=firstName(p);
@@ -945,6 +983,19 @@ document.addEventListener("click",e=>{
   if(a==="savebase"){store.set("radar_cv",clone(getCV(j.id)));return toast("Saved as your main CV.")}
   if(a==="reset"){const all=jobCVs();delete all[j.id];store.set("radar_cvjobs",all);drawStudio();return toast("Back to your main CV.")}
   if(a==="up"){const m=getCV(j.id),s=m.sections[b.dataset.si],[x]=s.lines.splice(Number(b.dataset.li),1);s.lines.splice(Number(b.dataset.to),0,x);putCV(j.id,m);return drawStudio()}
+  if(a==="marks"){T.marks=!T.marks;return drawStudio()}
+  if(a==="spare"){const m=getCV(j.id),ei=m.sections.findIndex(x=>x.title==="Experience");m.sections.splice(ei+1,0,clone(SPARE[0]));putCV(j.id,m);drawStudio();return toast("Added. Remove lines you don't need.")}
+  if(a==="askline"){const m=getCV(j.id),line=m.sections[b.dataset.si].lines[b.dataset.li].text,an=analyse(j,m),v=verdict(line,an);
+    return copyText(`Rewrite this one CV line for the ${j.title} role at ${j.company}.
+Problem: ${v[1]}. ${v[2]}
+Rules: use only facts that are true for me (from my CV below). Never invent numbers. Format: "Accomplished X, measured by Y, by doing Z". Use the job's words only where true. One line, under 30 words, no long dashes, no buzzwords. If a real number is missing, ask me for it instead of guessing. Give 2 options.
+
+LINE: ${line}
+
+JOB KEYWORDS: ${an.kws.join(", ")}
+
+MY CV:
+${cvToText(m)}`).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
   if(a==="addb"){const m=getCV(j.id),s=m.sections[b.dataset.si];s.lines.push({t:"b",text:""});putCV(j.id,m);drawStudio();
     const els=document.querySelectorAll(`[data-p^="${b.dataset.si}."]`);els[els.length-1]?.focus();return}
   if(a==="who"){T.person=Number(b.dataset.i);const d=readDraft(),p=people(j)[T.person],fn=firstName(p);d.hi=`Hi ${fn||"there"},`;if(p.email)d.to=p.email;saveDraft(j,d);return drawStudio()}
