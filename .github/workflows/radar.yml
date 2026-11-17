@@ -15,7 +15,7 @@ jobs:
     env:
       TZ: Asia/Kolkata
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 40          # enough history to see when radar.db was last backed up
 
