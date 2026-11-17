@@ -637,6 +637,7 @@ body.studio-open .studio{display:flex;animation:fadein .3s var(--spring)}
 .flag{font-size:12px;color:var(--mute);line-height:1.5}
 .flag b{color:var(--ink);font-weight:600}
 .jd{width:100%;min-height:180px;border-radius:14px;border:1px solid var(--sep);background:var(--fill);padding:10px 12px;font-family:inherit;font-size:13px;line-height:1.45;resize:vertical;color:var(--ink)}
+.jdmore{margin-bottom:20px;font-size:12px;color:var(--mute)}.jdmore summary{cursor:pointer;color:var(--blue);font-weight:600;margin-bottom:8px}
 .sug{padding:13px 14px;border-radius:16px;background:var(--tile);margin-bottom:8px;font-size:13px;line-height:1.45}
 .sug b{display:block;font-size:12px;font-weight:600;color:var(--mute);margin-bottom:3px}
 .sug q{quotes:none;color:var(--ink);font-style:italic}
@@ -767,13 +768,15 @@ function textToCV(t){const L=t.replace(/\r/g,"").split("\n").map(x=>x.trim());
 function cvPlain(m){return m?[m.name,m.headline||"",m.contact,...m.sections.flatMap(s=>[s.title,...s.lines.map(l=>l.text)])].join("\n"):""}
 
 /* ---- analysis ---- */
-function jdOf(j){return(j.d&&j.d.description)||store.get("radar_jd",{})[j.id]||""}
+function jdOf(j){const a=(j.d&&j.d.description)||"",b=store.get("radar_jd",{})[j.id]||"";return b.length>a.length?b:a}
 function jdKeywords(jd){const out=[];for(const k of KW){const n=(jd.match(new RegExp("(^|[^A-Za-z0-9])"+reEsc(k)+"(?![A-Za-z0-9])","gi"))||[]).length;if(n)out.push([k,n])}
   return out.sort((a,b)=>b[1]-a[1]).slice(0,16).map(x=>x[0])}
 const STOP=new Set("about above after again their there these those which while with within would should could your you have will from that this they them what when where were been being into more most other some such than then very also able work team role strong good great using use".split(" "));
-function requirements(jd){const lines=jd.split(/\n|(?<=[.;])\s+(?=[A-Z])/).map(x=>x.replace(/^[•\-*\s]+/,"").trim()).filter(x=>x.length>18&&x.length<260);
-  const RQ=/(experience|you have|you are|must|able to|ability|proficien|familiar|knowledge|comfortable|strong|skills?|years?|degree|understanding|background in|track record)/i;
-  let r=lines.filter(x=>RQ.test(x));return[...new Set(r)].slice(0,7)}
+function requirements(jd){const lines=jd.split(/\n|[•·▪●]|;|(?<=[.!?])\s+(?=[A-Z0-9])/).map(x=>x.replace(/^[\-*–\s]+/,"").trim()).filter(x=>x.length>18&&x.length<260);
+  const RQ=/(experience|you have|you are|you('|’)ll|must|able to|ability|proficien|familiar|knowledge|comfortable|strong|skills?|years?|degree|understanding|background in|track record|hands-on|expert)|\b(own|owning|drive|manage|lead|build|run)\b/i;
+  let r=[...new Set(lines.filter(x=>RQ.test(x)))];
+  if(r.length<3)r=[...new Set([...r,...lines.filter(x=>KW.some(k=>kwRe(k).test(x)))])];
+  return r.slice(0,7)}
 function reqStatus(req,cvtxt){const low=cvtxt.toLowerCase();
   let words=KW.filter(k=>kwRe(k).test(req));
   if(!words.length)words=[...new Set((req.toLowerCase().match(/[a-z][a-z-]{4,}/g)||[]).filter(w=>!STOP.has(w)))].slice(0,6);
@@ -837,7 +840,9 @@ function cvStats(a){return`<div class="stat">${ring(a.match)}<span><b>${a.match}
 function cvLeft(j,a){
   if(!a.jd)return`<div class="st-h">Job Description</div><p class="muted" style="margin-bottom:10px">This job page couldn't be read. Paste the description to get suggestions.</p>
     <textarea class="jd" id="jd-in" placeholder="Paste the job description"></textarea>`;
-  return`<div class="st-h">What They Want</div><div>${a.reqs.map(([r,st,miss])=>`<div class="req"><span class="ri ${st}">${st==="ok"?"✓":st==="part"?"~":"!"}</span>
+  const short=a.jd.length<1200?`<details class="jdmore"${a.reqs.length<2?" open":""}><summary>Description looks short. Paste the full one</summary>
+    <textarea class="jd" id="jd-in" placeholder="Paste the full job description from the job page">${esc(store.get("radar_jd",{})[j.id]||"")}</textarea></details>`:"";
+  return`${short}<div class="st-h">What They Want</div><div>${a.reqs.map(([r,st,miss])=>`<div class="req"><span class="ri ${st}">${st==="ok"?"✓":st==="part"?"~":"!"}</span>
       <div>${esc(r.length>120?r.slice(0,118)+"…":r)}${st!=="ok"&&miss.length?`<small>Not in your CV: ${esc(miss.slice(0,3).join(", "))}</small>`:""}</div></div>`).join("")||'<p class="muted">No clear requirement lines found. Use the keywords below.</p>'}</div>
     <div class="st-h">Their Words</div><div class="kws">${a.kws.map(k=>`<span class="kw ${a.found.includes(k)?"on":""}">${esc(k)}</span>`).join("")||'<span class="muted">None found.</span>'}</div>
     <div class="st-h">Sounds Human?</div><div><div class="bar"><i style="width:${a.human.score}%"></i></div>
@@ -853,7 +858,7 @@ function cvRight(j,m,a){if(!m)return`<div class="st-h">How This Works</div><p cl
     for(const[g0,g1]of groups){let best=g0,bs=-1;for(let k=g0;k<g1;k++){const sc=a.kws.filter(w=>kwRe(w).test(sec.lines[k].text)).length;if(sc>bs){bs=sc;best=k}}
       const first=a.kws.filter(w=>kwRe(w).test(sec.lines[g0].text)).length;
       if(best!==g0&&bs>first&&s.length<8)s.push(`<div class="sug"><b>Move up</b><q>${esc(sec.lines[best].text.slice(0,70))}…</q> matches this job best.<br><button class="pill-btn" data-st="up" data-si="${si}" data-li="${best}" data-to="${g0}">Move to Top</button></div>`)}});
-  for(const[r,st]of a.reqs)if(st==="gap"&&s.length<10)s.push(`<div class="sug"><b>Gap</b>${esc(r.slice(0,90))}${r.length>90?"…":""}. Leave it, or mention a real project that comes close.</div>`);
+  for(const[r,st]of a.reqs)if(st==="gap"&&s.length<10)s.push(`<div class="sug"><b>Gap</b>${esc(r.replace(/[.\s]+$/,"").slice(0,90))}${r.length>90?"…":""}. Leave it, or mention a real project that comes close.</div>`);
   const FOODY=/\b(food|dairy|fmcg|cpg|nutrition|nutraceutical|beverage|agri|manufactur|quality|consumer goods|r&d|npd)\b/i;
   if(FOODY.test(a.jd)&&!m.sections.some(x=>x.title==="Other Internships"))s.unshift(`<div class="sug"><b>Related experience</b>This job fits your food and dairy background. Add Saras Dairy, NIFTEM-K and KVK internships?<br><button class="pill-btn" data-st="spare">Add to CV</button></div>`);
   return`<div class="st-h">Suggestions</div>${s.join("")||'<p class="muted">Looks strong. Read it once out loud before sending.</p>'}
@@ -880,8 +885,20 @@ function cvEdited(el){const j=job(),m=getCV(j.id);setPath(m,el.dataset.p,el.inne
   if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;
     const a0=analyse(j,m),t=m.sections[si].lines[li].text;$(`h-${si}-${li}`).innerHTML=tagHTML(t,a0,si,li);$(`v-${si}-${li}`).className="p-line v-"+(T.marks?verdict(t,a0)[0]:"off")}
   clearTimeout(saveT);saveT=setTimeout(()=>{const a=analyse(j,getCV(j.id));$("st-stats").innerHTML=cvStats(a);$("st-left").innerHTML=cvLeft(j,a);$("st-right").innerHTML=cvRight(j,getCV(j.id),a)},350)}
-function cvAskClaude(j){return`Look at the CV on this page. I'm applying for ${j.title} at ${j.company}.
-List the 5 lines I should change most, each with one better version in the form "Accomplished X, measured by Y, by doing Z". Use only facts already in my CV, put [X] where I need to add a real number. No long dashes, no buzzwords. Keep the whole answer short.`}
+function cvAskClaude(j){const jd=jdOf(j).slice(0,6000);return`Tailor the CV on this page for ${j.title} at ${j.company}.
+${jd?`\nJOB DESCRIPTION:\n${jd}\n`:`\nJob link: ${j.url}\n`}
+RULES:
+- Use only facts already in my CV. Never invent numbers, tools or results. Put [X] where I need to add a real number.
+- Rewrite lines as "Accomplished X, measured by Y, by doing Z".
+- Use the job's own words only where they are true for me.
+- Strongest, most relevant line first under each role. Keep it to one page.
+- No long dashes (—), no buzzwords (spearheaded, leveraged, orchestrated, passionate).
+
+REPLY SHORT, in this format only:
+CHANGE (max 8): old line → new line
+ADD NUMBER: lines where I must fill [X]
+MOVE DOWN OR CUT: lines that don't fit this job
+GAPS: what they want that my CV honestly doesn't show (one line each)`}
 function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w){toast("Allow pop-ups to export the PDF.");return}
   const head=t=>{const parts=t.split(/\s+\|\s+/);const last=parts.length>1&&/(\d{4}|present|current)/i.test(parts[parts.length-1])?parts.pop():"";
     return`<div class="h"><span><b>${esc(parts[0]||"")}</b>${parts.length>1?", "+esc(parts.slice(1).join(", ")):""}</span><span>${esc(last)}</span></div>`};
@@ -897,7 +914,7 @@ function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w
   p{margin:2px 0}ul{margin:2px 0 0 16px;padding:0}li{margin:1px 0}</style></head>
   <body><h1>${esc(m.name)}</h1>${m.headline?`<div class="hl">${esc(m.headline)}</div>`:""}<div class="ct">${esc(m.contact)}</div>${body}<script>onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);w.document.close()}
 
-function askClaude(t){copyText(t).then(ok=>toast(ok?"Copied. Open Claude (⌥C) and press ⌘V.":"Couldn't copy. Allow clipboard for this site."))}
+function askClaude(t){copyText(t).then(ok=>toast(ok?"Copied. Press ⌘E to open Claude, then ⌘V.":"Couldn't copy. Allow clipboard for this site."))}
 /* ---- events ---- */
 document.addEventListener("click",e=>{
   const op=e.target.closest("[data-tailor]");
@@ -926,7 +943,7 @@ document.addEventListener("input",e=>{if(!T.mode)return;const t=e.target;
     $("st-stats").innerHTML=cvStats(a);$("st-right").innerHTML=cvRight(j,m,a);$("paper").innerHTML=paperHTML(j,m,a)},500);return}
   if(t.isContentEditable&&t.dataset.p)return cvEdited(t);
 });
-document.addEventListener("focusout",e=>{const t=e.target;if(T.mode==="cv"&&t.isContentEditable&&t.dataset.p){const a=analyse(job(),getCV(T.id));t.innerHTML=hl(t.innerText.replace(/\n+/g," ").trim(),a.kws)}});
+document.addEventListener("focusout",e=>{const t=e.target;if(T.mode&&t.id==="jd-in")return drawStudio();if(T.mode==="cv"&&t.isContentEditable&&t.dataset.p){const a=analyse(job(),getCV(T.id));t.innerHTML=hl(t.innerText.replace(/\n+/g," ").trim(),a.kws)}});
 document.addEventListener("paste",e=>{const t=e.target.closest&&e.target.closest("[contenteditable]");if(!t||!T.mode)return;e.preventDefault();
   document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text").replace(/\s*\n\s*/g," "))});
 document.addEventListener("keydown",e=>{if(!T.mode)return;
