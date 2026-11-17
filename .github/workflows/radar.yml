@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 40          # enough history to see when radar.db was last backed up
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
