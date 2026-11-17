@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Job Radar</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -322,6 +323,8 @@ let DATA={jobs:[],health:[],funding:[],funding_health:[]},lastVisit=null,mem={};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
   set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const applied=()=>store.get("radar_applied",{});
+const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"#";   // blocks javascript:, data: and other link tricks
+const EMAIL_RE=/^[^\s@<>"']+@[^\s@<>"']+\.[A-Za-z]{2,}$/;
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const when=j=>j.posted_at||j.first_seen_at;
 const hrs=iso=>iso?(Date.now()-new Date(iso))/36e5:null;
@@ -361,7 +364,7 @@ function fdetailHTML(f,sheet){
       <div class="d-sub">Raised ${f.amount?`<b class="amt">${esc(f.amount)}</b>`:"funding"}${f.round?" in a "+esc(f.round)+" round":""}. Reported <span class="${fhot(f)?"hot":""}">${long(fwhen(f)).toLowerCase()}</span>.</div>
       ${(f.founders||[]).length?`<p class="fnames"><span>Founders</span>${f.founders.map(esc).join(", ")}</p>`:""}
       <p class="headline">${esc(f.headline)}</p>
-      <div class="actions"><a class="btn primary" href="${esc(f.url)}" target="_blank" rel="noopener">Read News</a>
+      <div class="actions"><a class="btn primary" href="${esc(safeUrl(f.url))}" target="_blank" rel="noopener">Read News</a>
 </div>
     </div>
     <div class="facts">
@@ -448,7 +451,7 @@ function detailHTML(j,sheet){
       <div class="d-co">${esc(j.company)} on ${esc(BOARD[j.source]||j.source)}</div>
       <h2 class="d-title">${esc(j.title)}</h2>
       <div class="d-sub">${esc(j.location||"Location not listed")}. Posted <span class="${hot(j)?"hot":""}">${long(when(j)).toLowerCase()}</span>.</div>
-      <div class="actions"><a class="btn primary" href="${esc(j.url)}" target="_blank" rel="noopener">Open Job</a>
+      <div class="actions"><a class="btn primary" href="${esc(safeUrl(j.url))}" target="_blank" rel="noopener">Open Job</a>
         <button class="btn glass ${done?"done":""}" data-apply="${j.id}">${done?"✓ Applied":"Mark as Applied"}</button>
         <button class="btn glass" data-tailor="${j.id}">Tailor CV</button>
 </div>
@@ -467,14 +470,14 @@ function jobExtras(j){const d=j.d;
   if(!d)return`<p class="note">People and the job description appear after the next scan.</p>`;
   if(d.error&&!d.people?.length)return`<p class="note">Couldn't read this job page (${esc(d.error)}). Use Open Job instead.</p>`;
   const people=(d.people||[]).map((p,i)=>{
-    const link=p.linkedin?`<a class="pill-btn" href="${esc(p.linkedin)}" target="_blank" rel="noopener" aria-label="LinkedIn">${LI}<span>Profile</span></a>`
-      :p.search?`<a class="pill-btn" href="${esc(p.search)}" target="_blank" rel="noopener">${LI}<span>Find</span></a>`:"";
-    const mail=p.email?`<a class="pill-btn blue" href="mailto:${esc(p.email)}">Email</a>`:"";
+    const link=p.linkedin?`<a class="pill-btn" href="${esc(safeUrl(p.linkedin))}" target="_blank" rel="noopener" aria-label="LinkedIn">${LI}<span>Profile</span></a>`
+      :p.search?`<a class="pill-btn" href="${esc(safeUrl(p.search))}" target="_blank" rel="noopener">${LI}<span>Find</span></a>`:"";
+    const mail=EMAIL_RE.test(p.email||"")?`<a class="pill-btn blue" href="mailto:${esc(p.email)}">Email</a>`:"";
     return`<div class="prow"><span class="av ${p.role==="Founder"?"av-f":p.role==="HR"?"av-h":p.role==="Hiring manager"?"av-m":"av-e"}">${p.email&&!p.linkedin&&p.role==="From the post"?"@":esc(initials(p.name))}</span>
       <div class="pinfo"><div class="pname">${esc(p.name)} <span class="role">${esc(p.role)}</span></div><div class="ptitle">${esc(p.title||"")}</div>
         <div class="meters">${meter("Worth emailing",p.need)}${meter("Email findable",p.exists)}</div></div>
       <div class="pact">${mail}${link}</div></div>`}).join("");
-  const c=d.company||{},facts=[c.website?`<a href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//,"").replace(/\/$/,""))}</a>`:"",
+  const c=d.company||{},facts=[c.website?`<a href="${esc(safeUrl(c.website))}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//,"").replace(/\/$/,""))}</a>`:"",
     c.team_size?`${c.team_size} people`:"",c.batch?`YC ${esc(c.batch)}`:""].filter(Boolean);
   return`<section class="sec"><h3>Outreach</h3><div class="glist pad">
       <div class="need"><div class="need-v">${d.need??"—"}<small>%</small></div><div><div class="need-t">Worth emailing someone directly</div>
@@ -578,13 +581,13 @@ document.addEventListener("keydown",e=>{
   if(isF()){const ids=frows().map(f=>f.id),i=ids.indexOf(S.fsel),f=(DATA.funding||[]).find(x=>x.id===S.fsel);
     if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.fsel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
       renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
-    else if(e.key==="Enter"&&f)window.open(f.url,"_blank","noopener");
+    else if(e.key==="Enter"&&f)window.open(safeUrl(f.url),"_blank","noopener");
     else if(e.key==="/"){e.preventDefault();$("q").focus()}
     return}
   const ids=filtered().map(j=>j.id),i=ids.indexOf(S.sel);
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();S.sel=ids[Math.min(ids.length-1,Math.max(0,i+(e.key==="ArrowDown"?1:-1)))];
     renderList();renderDetail();document.querySelector(".row[aria-selected=true]")?.scrollIntoView({block:"nearest"})}
-  else if(e.key==="Enter"&&S.sel!=null){const j=DATA.jobs.find(x=>x.id===S.sel);if(j)window.open(j.url,"_blank","noopener")}
+  else if(e.key==="Enter"&&S.sel!=null){const j=DATA.jobs.find(x=>x.id===S.sel);if(j)window.open(safeUrl(j.url),"_blank","noopener")}
   else if((e.key==="a"||e.key==="A")&&S.sel!=null&&!e.metaKey&&!e.ctrlKey)toggleApplied(S.sel);
   else if((e.key==="e"||e.key==="E")&&S.sel!=null&&!e.metaKey&&!e.ctrlKey){const j=DATA.jobs.find(x=>x.id===S.sel);if(j?.d)copyText(emailRequest(j)).then(ok=>toast(ok?"Copied. Paste it in your Claude chat.":"Couldn't copy."))}
   else if(e.key==="/"){e.preventDefault();$("q").focus()}
@@ -885,7 +888,7 @@ function cvEdited(el){const j=job(),m=getCV(j.id);setPath(m,el.dataset.p,el.inne
   if(x){const r=xyz(m.sections[si].lines[li].text);x.innerHTML=`<i class="${r.x?"on":""}"></i><i class="${r.y?"on":""}"></i><i class="${r.z?"on":""}"></i>`;
     const a0=analyse(j,m),t=m.sections[si].lines[li].text;$(`h-${si}-${li}`).innerHTML=tagHTML(t,a0,si,li);$(`v-${si}-${li}`).className="p-line v-"+(T.marks?verdict(t,a0)[0]:"off")}
   clearTimeout(saveT);saveT=setTimeout(()=>{const a=analyse(j,getCV(j.id));$("st-stats").innerHTML=cvStats(a);$("st-left").innerHTML=cvLeft(j,a);$("st-right").innerHTML=cvRight(j,getCV(j.id),a)},350)}
-function cvAskClaude(j){const jd=jdOf(j).slice(0,6000);return`Tailor the CV on this page for ${j.title} at ${j.company}.
+function cvAskClaude(j){const jd=jdOf(j).slice(0,6000);return`Tailor my CV (below) for ${j.title} at ${j.company}.
 ${jd?`\nJOB DESCRIPTION:\n${jd}\n`:`\nJob link: ${j.url}\n`}
 RULES:
 - Use only facts already in my CV. Never invent numbers, tools or results. Put [X] where I need to add a real number.
@@ -898,7 +901,10 @@ REPLY SHORT, in this format only:
 CHANGE (max 8): old line → new line
 ADD NUMBER: lines where I must fill [X]
 MOVE DOWN OR CUT: lines that don't fit this job
-GAPS: what they want that my CV honestly doesn't show (one line each)`}
+GAPS: what they want that my CV honestly doesn't show (one line each)
+
+MY CV:
+${cvToText(getCV(j.id))}`}
 function exportPDF(j){const m=getCV(j.id);const w=window.open("","_blank");if(!w){toast("Allow pop-ups to export the PDF.");return}
   const head=t=>{const parts=t.split(/\s+\|\s+/);const last=parts.length>1&&/(\d{4}|present|current)/i.test(parts[parts.length-1])?parts.pop():"";
     return`<div class="h"><span><b>${esc(parts[0]||"")}</b>${parts.length>1?", "+esc(parts.slice(1).join(", ")):""}</span><span>${esc(last)}</span></div>`};
@@ -933,7 +939,10 @@ document.addEventListener("click",e=>{
   if(a==="askline"){const m=getCV(j.id),line=m.sections[b.dataset.si].lines[b.dataset.li].text,v=verdict(line,analyse(j,m));
     return askClaude(`Rewrite this CV line for the ${j.title} job at ${j.company}: "${line}"
 Problem: ${v[2]}
-2 options, under 25 words each. Use only facts from my CV on this page, put [X] where I need a real number. No long dashes. Short answer.`)}
+2 options, under 25 words each. Use only facts from my CV below, put [X] where I need a real number. No long dashes. Short answer.
+
+MY CV:
+${cvToText(m)}`)}
   if(a==="addb"){const m=getCV(j.id),s=m.sections[b.dataset.si];s.lines.push({t:"b",text:""});putCV(j.id,m);drawStudio();
     const els=document.querySelectorAll(`[data-p^="${b.dataset.si}."]`);els[els.length-1]?.focus();return}
 
