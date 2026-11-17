@@ -10,10 +10,13 @@ UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 BAD_EMAIL = re.compile(r"(example\.com|sentry|wixpress|\.png|\.jpg|noreply|no-reply)", re.I)
 
+from scrapers._http import fetch_full
+
+# Sources whose job pages always block us (HTTP 403): don't fetch details, the dashboard shows "Open Job" instead.
+NO_DETAIL = {"trueup", "himalayas"}
+
 def _get(url, timeout=20):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace"), r.geturl()
+    return fetch_full(url, headers=UA, timeout=timeout, min_gap=0.8)
 
 def html_to_text(s, limit=6000):
     if not s:
@@ -167,7 +170,7 @@ def enrich_job(job):
                 company["yc_url"] = m.group(1)
     elif job["source"] == "hn":
         desc = hn_text(job["external_id"])
-    elif job["source"] != "trueup":
+    elif job["source"] not in NO_DETAIL:
         page, final = _get(job["url"])
         desc, site = parse_generic(page)
         company["website"] = site

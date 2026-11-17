@@ -25,25 +25,34 @@ def init():
 def _norm(s):
     return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
 
-def upsert(job, status="new"):
+SAFE_URL = re.compile(r"^https?://", re.I)
+
+def safe_url(u):
+    """Only http(s) links are stored; javascript:, data: etc. become ''."""
+    u = (u or "").strip()
+    return u if SAFE_URL.match(u) else ""
+
+def upsert(job, status="new", c=None):
     """job: dict(source, external_id, company, title, location, url, posted_at ISO or None).
-    Returns True if new."""
+    Pass an open connection `c` to reuse it (one transaction per source). Returns True if new."""
+    if c is None:
+        with conn() as c2:
+            return upsert(job, status, c2)
     key = f"{job['source']}:{job['external_id']}" if job.get("external_id") else \
         "h:" + hashlib.sha1(f"{_norm(job['company'])}|{_norm(job['title'])}|{job.get('url','')}".encode()).hexdigest()
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    with conn() as c:
-        if c.execute("SELECT 1 FROM jobs WHERE dedupe_key=?", (key,)).fetchone():
-            return False
-        dupe = c.execute("SELECT id FROM jobs WHERE source!=? AND lower(company)=lower(?) AND lower(title)=lower(?)",
-                         (job["source"], job["company"], job["title"])).fetchone()
-        c.execute("""INSERT INTO jobs (dedupe_key,source,external_id,company,title,location,url,
-                     posted_at,first_seen_at,tag,location_group,possible_dupe_of,status)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                  (key, job["source"], job.get("external_id"), job["company"], job["title"],
-                   job.get("location", ""), job.get("url", ""), job.get("posted_at"), now,
-                   (tag_title(job["title"]) or job.get("tag_hint", "")), location_group(job.get("location", "")),
-                   dupe["id"] if dupe else None, status))
-        return True
+    if c.execute("SELECT 1 FROM jobs WHERE dedupe_key=?", (key,)).fetchone():
+        return False
+    dupe = c.execute("SELECT id FROM jobs WHERE source!=? AND lower(company)=lower(?) AND lower(title)=lower(?)",
+                     (job["source"], job["company"], job["title"])).fetchone()
+    c.execute("""INSERT INTO jobs (dedupe_key,source,external_id,company,title,location,url,
+                 posted_at,first_seen_at,tag,location_group,possible_dupe_of,status)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              (key, job["source"], job.get("external_id"), job["company"], job["title"],
+               job.get("location", ""), safe_url(job.get("url", "")), job.get("posted_at"), now,
+               (tag_title(job["title"]) or job.get("tag_hint", "")), location_group(job.get("location", "")),
+               dupe["id"] if dupe else None, status))
+    return True
 
 def has_run(source):
     with conn() as c:

@@ -1,22 +1,69 @@
-# Job Radar - step 7 (cloud)
+# Job Radar
 
-Runs on GitHub every day at ~09:07 and ~21:07 India time. Mac can be off.
-Dashboard = a web page (GitHub Pages). Open it from any device.
+Finds new marketing, GTM, growth, founder's office and FDE jobs (0–1 years) as early as possible, plus fresh startup
+funding news to pitch. Runs by itself on GitHub every 6 hours; the dashboard is a static page anyone can open.
 
-## One-time setup
-1. github.com -> sign up / log in -> New repository. Name: job-radar. Choose PUBLIC. Create.
-2. On the repo page: "uploading an existing file" link. Drag in EVERYTHING from this folder
-   (the folders docs and scrapers, plus all files). Commit.
-   Do not upload radar.db or radar.log (they do not exist yet).
-3. Add file -> Create new file. Name it exactly:  .github/workflows/radar.yml
-   (typing the slashes creates the folders). Paste the full text of github-workflow-radar.yml. Commit.
-4. Tab "Actions" -> "Job Radar" -> Run workflow. Wait ~1-2 min until green tick.
-5. Settings -> Pages -> Source: "Deploy from a branch" -> Branch main, folder /docs -> Save.
-6. After ~1 min your link appears there: https://<username>.github.io/job-radar/
-   Bookmark it. Open on phone too.
+**Dashboard:** https://arpittrawat.github.io/Job-radar/
 
-## Notes
-- "Mark applied" is saved in that browser only (not synced between phone and laptop).
-- Repo is public, so the job list is public. It has no personal data.
-- GitHub may delay runs up to ~30 min. If it ever pauses the schedule, Actions tab -> Enable.
-- Local mode still works: python3 run.py, python3 server.py
+## How it works
+
+```
+scrapers/*.py ─┐
+funding.py ────┼─► radar.db (SQLite) ─► export.py ─► docs/jobs.json ─► docs/index.html (GitHub Pages)
+enrich.py ─────┘          ▲
+                          └── kept between runs in GitHub's cache; backed up to the repo once a day
+```
+
+1. `run.py` scrapes every source (one failing source never stops the others), stores new jobs in `radar.db`,
+   collects funding news (`funding.py`) and job details / people (`enrich.py`).
+2. `export.py` writes `docs/jobs.json`: every matching job, plus up to 1,000 other titles.
+3. `validate.py` blocks the save if `jobs.json` is broken or suddenly lost more than 80% of its jobs.
+4. The workflow commits `docs/jobs.json`; GitHub Pages serves `docs/`.
+
+## Schedule
+
+`.github/workflows/radar.yml` runs at 09:07, 15:07, 21:07 and 03:07 India time (GitHub may start it up to ~30 min late),
+or any time from **Actions → Job Radar → Run workflow**.
+
+- Green tick = data updated. The run page shows "N new matching jobs" and a per-source table.
+- Red ✗ = more than half the job sources failed, or the data check failed. Nothing bad is saved; GitHub emails you.
+- `.github/workflows/ci.yml` runs the tests on every upload. A red ✗ there means an uploaded file is broken.
+
+## Sources
+
+Jobs: Hacker News "Who is hiring", YC Work at a Startup, a16z portfolio, TrueUp, VC job boards (Sequoia, Accel,
+Lightspeed, Peak XV, Blume and more), Remote OK, Remotive, Himalayas, We Work Remotely, and company career pages
+(Ashby / Greenhouse / Lever / Workable) for recently funded startups.
+
+Funding: TechCrunch, Crunchbase News, Entrackr, Inc42, YourStory, Google News.
+
+## Settings (`config.json`)
+
+- `show_from`: the dashboard only shows jobs first seen after this time (older ones stay hidden but remembered).
+- `tags`: title keywords for each role. `locations`: keywords for India / Remote / US.
+
+## Run locally
+
+```
+python3 run.py && python3 export.py      # scrape + build docs/jobs.json
+python3 server.py                        # older local dashboard on http://localhost:8765
+python3 -m pytest -q                     # tests (pip install pytest)
+```
+
+No third-party Python packages are needed to run the radar itself.
+
+## Add a source
+
+Create `scrapers/<name>.py` with a `fetch()` that returns a list of
+`dict(source, external_id, company, title, location, url, posted_at)`, using `scrapers/_http.py` for requests
+(it retries 429 / 5xx / timeouts and spaces out requests). Add `<name>` to `SOURCES` in `run.py`.
+
+## Known limits
+
+- "Applied", tailored CVs and pasted job descriptions are saved in that browser only (not synced between devices).
+- Some sites block automated reads (for example Himalayas job pages); those jobs show "Open Job" without details.
+- The repo is public: the job list **and the CV inside `docs/index.html` (name, phone, email) are public on purpose.**
+
+## License
+
+MIT

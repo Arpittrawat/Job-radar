@@ -38,10 +38,11 @@ MEDIA_DOMAINS = {"x.com","t.co","bit.ly","wp.com","lnkd.in","goo.gl","ow.ly","bu
 def _is_media(domain):
     return domain in MEDIA_DOMAINS or any(p in MEDIA_NAMES for p in domain.split(".")[:-1])
 
+from scrapers._http import get as _http_get
+
 def _get(url, timeout=20):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+    # 1.5s gap per news site: Entrackr and others answer 429 when hit too fast
+    return _http_get(url, timeout=timeout, headers=UA, min_gap=1.5)
 
 def _text(s):
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
@@ -204,7 +205,7 @@ def store(item):
         c.execute("""INSERT INTO funding (dedupe_key,company,amount,amount_usd,round,region,headline,url,source,published_at,first_seen_at,website,founders)
                      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                   (key, item["company"], item["amount"], item["amount_usd"], item["round"], item["region"], item["headline"],
-                   item["url"], item["source"], item["published_at"], datetime.now(timezone.utc).isoformat(timespec="seconds"), item.get("website"),
+                   db.safe_url(item["url"]), item["source"], item["published_at"], datetime.now(timezone.utc).isoformat(timespec="seconds"), item.get("website"),
                    json.dumps(item.get("founders") or [])))
         return True
 

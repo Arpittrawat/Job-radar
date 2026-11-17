@@ -6,8 +6,9 @@ import db
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "jobs.json")
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Dashboard shows only jobs first seen on/after this moment. Older jobs stay in radar.db
-# (so they never come back as "new") but are hidden. Override with "show_from" in config.json.
-DEFAULT_SHOW_FROM = "2026-11-17T00:00:00+05:30"
+# (so they never come back as "new") but are hidden.
+# config.json "show_from" is the one place to change this; the default below is only used if it's missing.
+DEFAULT_SHOW_FROM = "2026-11-14T00:00:00+05:30"
 
 def show_from():
     try:
@@ -26,13 +27,26 @@ def _dt(s):
 FIELDS = ["id", "source", "company", "title", "location", "url", "posted_at",
           "first_seen_at", "tag", "location_group", "status", "possible_dupe_of"]
 
+MAX_TAGGED = 5000   # safety cap; matching jobs are never pushed out by other titles
+MAX_OTHER = 1000    # jobs that don't match your roles ("Show other titles")
+
+def select_jobs(rows):
+    """rows newest first. All matching jobs first, then up to MAX_OTHER others; result stays newest first."""
+    tagged = [r for r in rows if r["tag"]][:MAX_TAGGED]
+    other = [r for r in rows if not r["tag"]][:MAX_OTHER]
+    keep = {id(r) for r in tagged + other}
+    for r in rows:
+        r["url"] = db.safe_url(r.get("url"))
+    return [r for r in rows if id(r) in keep]
+
 def main():
     db.init()
     with db.conn() as c:
         cut = show_from()
-        jobs = [{k: r[k] for k in FIELDS} for r in c.execute(
+        rows = [{k: r[k] for k in FIELDS} for r in c.execute(
             "SELECT * FROM jobs ORDER BY COALESCE(posted_at, first_seen_at) DESC")
-            if (_dt(r["first_seen_at"]) or cut) >= cut and not r["possible_dupe_of"]][:3000]
+            if (_dt(r["first_seen_at"]) or cut) >= cut and not r["possible_dupe_of"]]
+        jobs = select_jobs(rows)
         if c.execute("SELECT 1 FROM sqlite_master WHERE name='details'").fetchone():
             det = {r["job_id"]: r["data"] for r in c.execute("SELECT job_id, data FROM details")}
             for j in jobs:
@@ -61,6 +75,7 @@ def main():
                     r["founders"] = [n for n in r["founders"] if n][:4]
                 except Exception:
                     r["founders"] = []
+                r["url"] = db.safe_url(r.get("url"))
                 r["company"] = _f.clean_name(r["company"]) or r["company"]
                 k = _f.norm_company(r["company"])
                 # same company written two ways (e.g. "Morgan" / "Morgan Health") with the same amount = same story
